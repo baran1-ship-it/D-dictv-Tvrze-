@@ -2,18 +2,19 @@ extends RefCounted
 const Masonry = preload("res://scripts/masonry_mesh.gd")
 
 # Every shingle has a projecting butt edge and thickness; adjoining rows overlap.
-static func make(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size: Vector2, triangular := false) -> Dictionary:
+static func make(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size: Vector2, triangular := false, clay := false) -> Dictionary:
 	var s := SurfaceTool.new()
 	s.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(absf(origin.x*193+origin.y*371+origin.z*947))+501
 	var count := 0
-	var rows := int(ceil(size.y/.235))
+	var row_height := .235 if not clay else .27
+	var rows := int(ceil(size.y/row_height))
 	for row in range(rows):
-		var y := row*.235
+		var y := row*row_height
 		var x := -.20 if row%2 else 0.0
 		while x<size.x:
-			var width := rng.randf_range(.145,.23)
+			var width := rng.randf_range(.145,.23) if not clay else rng.randf_range(.26,.32)
 			var a := maxf(0,x+.004)
 			var b := minf(size.x,x+width-.004)
 			var top := minf(size.y,y+.43)

@@ -1,4 +1,5 @@
 extends SceneTree
+const Masonry = preload("res://scripts/masonry_mesh.gd")
 var game: Node3D
 var failures: Array[String] = []
 
@@ -91,8 +92,13 @@ func run() -> void:
 	check(game.player.test_move(game.player.transform,Vector3(0,0,2)),"closed door should block movement")
 	check(game.world.windows.size()>=8,"windows should be actual framed openings")
 	check(game.world.relief_cells>10000,"masonry and paving must have geometric relief")
-	check(game.world.roof_cells>3000,"roof slopes must contain individual overlapping wooden shingles")
+	check(game.world.roof_cells>3000,"roof slopes must contain individual overlapping tiles and canopy shingles")
 	check(game.world.stone_count>5000,"fortifications must contain closed individual 3D stones")
+	check(game.world.mats.has("palace_rock") and game.world.mats.has("tower_rock"),"palace and tower should have separate stone materials")
+	check(game.world.mats.has("earth") and game.world.mats.has("clay"),"courtyard earth and tile roofs should be present")
+	check(Masonry.yard_path(Vector3(0,0,12)),"main gate path must be paved")
+	check(Masonry.yard_path(Vector3(7,0,8)),"east doorway path must be paved")
+	check(not Masonry.yard_path(Vector3(-8,0,6)),"unused courtyard should retain earth")
 	for w in game.world.windows:
 		check(absf(w.x-17)>.01 and absf(w.z+17)>.01,"windows facing the inaccessible inner perimeter must be removed")
 	# Sample the corrected wall-side seams, using visible floor footprints as well as collision rays.
