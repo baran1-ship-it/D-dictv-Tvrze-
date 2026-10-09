@@ -191,6 +191,9 @@ func make_materials() -> void:
 	mats.roofscan.roughness = .98
 	mats.rock3d = pbr("rock_face_03",Color("b0b5b5"))
 	mats.rock3d.vertex_color_use_as_albedo = true
+	mats.rock3d.uv1_triplanar = true
+	mats.rock3d.uv1_world_triplanar = true
+	mats.rock3d.uv1_scale = Vector3.ONE*.85
 	mats.stone_floor = mats.rock3d.duplicate()
 	mats.stone_floor.albedo_color = Color("a49d8e")
 	mats.towerstone = mats.rubble.duplicate()

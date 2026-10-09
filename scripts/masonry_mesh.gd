@@ -47,7 +47,8 @@ static func face(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size:
 			if poly.size()<3: continue
 			var phase := Vector2(rng.randf(),rng.randf())
 			var depth := rng.randf_range(.075,.18)
-			var tint := Color(rng.randf_range(.80,1.0),rng.randf_range(.81,1.0),rng.randf_range(.79,.96))
+			var shade := rng.randf_range(.83,1.0)
+			var tint := Color(shade,shade,shade)
 			var back: Array[Vector3] = []
 			var rim: Array[Vector3] = []
 			var front: Array[Vector3] = []
