@@ -330,18 +330,32 @@ func floorboards(pos: Vector3, size: Vector2, across_x := false) -> void:
 			timber(Vector3(x,pos.y-.045,pos.z-size.y/2+(j+.5)*length),Vector3(width-.009,length-.012,.09),false,"wood",Vector3.FORWARD)
 
 func stone_atlas(material: StandardMaterial3D) -> void:
-	# Four coherent scanned patches share one material and one draw batch.
+	# Surface detail comes from rock faces or the interior of ONE scanned stone.
+	# Never paint a complete wall with its miniature mortar joints on a voussoir.
+	var patches := [Rect2i(5,5,280,280),Rect2i(650,350,300,300),Rect2i(500,470,70,40),Rect2i(510,480,50,30)]
 	for channel in ["diff","normal","rough","ao"]:
 		var atlas := Image.create(1024,1024,false,Image.FORMAT_RGB8)
 		for i in range(4):
-			var asset := "rock_face_03" if i%2==0 else "stone_wall"
+			var asset := "rock_face_03" if i<2 else "stone_wall"
 			var image := (load("res://assets/materials/pbr/"+asset+"_"+channel+".jpg") as Texture2D).get_image()
-			if channel=="diff" and i==2: image = (load("res://assets/materials/rock.jpg") as Texture2D).get_image()
 			if image.is_compressed(): image.decompress()
 			image.clear_mipmaps()
-			image.resize(1024,1024)
 			image.convert(Image.FORMAT_RGB8)
-			atlas.blit_rect(image,Rect2i((i%2)*256,(i/2)*256,512,512),Vector2i((i%2)*512,(i/2)*512))
+			var patch := image.get_region(patches[i])
+			if channel=="diff":
+				var mean := Vector3.ZERO
+				for py in range(patch.get_height()):
+					for px in range(patch.get_width()):
+						var c := patch.get_pixel(px,py)
+						mean += Vector3(c.r,c.g,c.b)
+				mean /= patch.get_width()*patch.get_height()
+				var target := Vector3(.51,.49,.44)*(1.0+float(i-1)*.014)
+				for py in range(patch.get_height()):
+					for px in range(patch.get_width()):
+						var c := patch.get_pixel(px,py)
+						patch.set_pixel(px,py,Color(c.r*target.x/mean.x,c.g*target.y/mean.y,c.b*target.z/mean.z))
+			patch.resize(512,512)
+			atlas.blit_rect(patch,Rect2i(0,0,512,512),Vector2i((i%2)*512,(i/2)*512))
 		atlas.generate_mipmaps(channel=="normal")
 		var texture := ImageTexture.create_from_image(atlas)
 		if channel=="diff": material.albedo_texture = texture
@@ -386,7 +400,9 @@ func yard_surface() -> void:
 	Construction.quad(s,[Vector3(-18,.002,-18),Vector3(18,.002,-18),Vector3(18,.002,18),Vector3(-18,.002,18)],Vector3.UP)
 	s.index()
 	batch(s.commit(),Transform3D.IDENTITY,"earth")
-	mats.water = plain(Color("535d55"),.12,.18)
+	mats.water = plain(Color("555548"),.23,0)
+	mats.water.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mats.water.vertex_color_use_as_albedo = true
 	mats.water.normal_enabled = true
 	mats.water.normal_texture = mats.earth.normal_texture
 	mats.water.normal_scale = .04
@@ -397,9 +413,13 @@ func yard_surface() -> void:
 		for i in range(18):
 			var a := i*TAU/18
 			var b := (i+1)*TAU/18
-			var pa := center+Vector3(cos(a)*puddle.z*(1+.12*sin(a*3)),0,sin(a)*puddle.w)
-			var pb := center+Vector3(cos(b)*puddle.z*(1+.12*sin(b*3)),0,sin(b)*puddle.w)
-			Masonry.triangle(pool,center,pa,pb,[Vector2(.5,.5),Vector2(cos(a),sin(a))*.5+Vector2(.5,.5),Vector2(cos(b),sin(b))*.5+Vector2(.5,.5)],Vector3.UP,Color.WHITE)
+			var pa := center+Vector3(cos(a)*puddle.z,0,sin(a)*puddle.w)*(1+.17*sin(a*3)+.07*cos(a*7))
+			var pb := center+Vector3(cos(b)*puddle.z,0,sin(b)*puddle.w)*(1+.17*sin(b*3)+.07*cos(b*7))
+			for vertex in [center,pb,pa]:
+				pool.set_normal(Vector3.UP)
+				pool.set_uv(Vector2(vertex.x,vertex.z)*.3)
+				pool.set_color(Color(1,1,1,.85 if vertex==center else .0))
+				pool.add_vertex(vertex)
 		pool.index()
 		batch(pool.commit(),Transform3D.IDENTITY,"water")
 
@@ -459,7 +479,7 @@ func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 			var rear := sample.z< -17.2 or sample.x>17.2
 			var min_y := 5.0 if inside or rear else -100.0
 			if wall_finish_override=="plaster": min_y = -100.0
-			var lime := Masonry.plaster(origin+basis*f[3]*.056,basis*f[1],basis*f[2],basis*f[3],f[4],i==1,min_y)
+			var lime := Masonry.plaster(origin+basis*f[3]*.056,basis*f[1],basis*f[2],basis*f[3],f[4],i==1 and wall_finish_override!="plaster",min_y)
 			if lime.get_surface_count()>0: batch(lime,Transform3D.IDENTITY,"plaster")
 
 func wall(pos: Vector3, width: float, height: float, centers: Array, titles: Array, angle := 0.0) -> void:

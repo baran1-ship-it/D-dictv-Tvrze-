@@ -28,8 +28,8 @@ func run() -> void:
 	await shot("corridor-north.png",Vector3(12,.1,-18.70),1.57,.22)
 	await shot("vault-palace.png",Vector3(-11,.1,-11),0,.82)
 	await shot("vault-east.png",Vector3(12,.1,10),.4,.9)
-	await shot("tower-divider.png",Vector3(10.55,5.1,-.35),-1.57,.03)
-	await shot("tower-ground.png",Vector3(13,.1,-3.5),1.57,.3)
+	await shot("tower-divider.png",Vector3(9.05,5.1,-.35),-1.57,-.08)
+	await shot("tower-ground.png",Vector3(14.15,.1,-5.8),-.25,.75)
 	await shot("ordinary-door.png",Vector3(-8.8,.1,-5.3),0,.05)
 	await shot("double-gate.png",Vector3(0,.1,12),PI,.28)
 
