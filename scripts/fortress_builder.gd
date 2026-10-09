@@ -565,31 +565,43 @@ func gallery() -> void:
 	# One continuous level with the wall walk; the palace storeys stay unchanged.
 	floorboards(Vector3(-4.75,3.6,-6.5),Vector2(25.5,3))
 	for x in [-17.3,-14.0,-11.0,-8.0,-5.0,-2.0,1.0,4.0,8.0]:
-		beam(Vector3(x,0,-5),Vector3(x,6.7,-5),.23,"beam",true)
+		beam(Vector3(x,0,-5),Vector3(x,6.7,-5),.30,"beam",true)
 		beam(Vector3(x,5.8,-5),Vector3(x,6.8,-6.5),.15)
-		beam(Vector3(x,2.5,-5),Vector3(x,3.48,-6.4),.17)
+		beam(Vector3(x,2.5,-5),Vector3(x,3.30,-6.4),.24)
 	# Openings serve the west wall corner, west stair landing and tower-side stair.
 	rail(Vector3(-12.75,3.6,-5),Vector3(5.55,3.6,-5))
-	beam(Vector3(-17.5,3.45,-5),Vector3(8,3.45,-5),.25)
+	# Two continuous bearers carry the cross joists and every floor plank.
+	beam(Vector3(-17.5,3.27,-5.05),Vector3(8.15,3.27,-5.05),.30)
+	beam(Vector3(-17.5,3.27,-7.85),Vector3(8.15,3.27,-7.85),.30)
+	for i in range(22):
+		var x: float = -17.35+i*1.2
+		beam(Vector3(x,3.40,-8.15),Vector3(x,3.40,-4.95),.24)
 	# Straight stair parallel to the front of the palace gallery.
-	flight(Vector3(-4.0,0,-4.1),Vector3.LEFT,20,.18,.48,1.6)
+	flight(Vector3(-7.68,0,-4.1),Vector3.LEFT,18,.20,.32,1.6)
 	floorboards(Vector3(-14.4,3.6,-4.1),Vector2(3.04,1.95))
-	rail(Vector3(-15.92,3.6,-3.125),Vector3(-12.88,3.6,-3.125))
-	rail(Vector3(-15.92,3.6,-5.075),Vector3(-15.92,3.6,-3.125))
-	stair_routes.append({"start":Vector3(-3.35,.08,-4.1),"mid":Vector3(-8.5,1.9,-4.1),"turn":Vector3(-13.2,3.7,-4.1),"end":Vector3(-14.7,3.7,-4.1),"exit":Vector3(-14.7,3.7,-6.4)})
+	rail(Vector3(-15.92,3.6,-3.31),Vector3(-13.12,3.6,-3.31))
+	rail(Vector3(-15.92,3.6,-4.9),Vector3(-15.92,3.6,-3.31))
+	stair_routes.append({"start":Vector3(-7.03,.08,-4.1),"mid":Vector3(-10.24,1.9,-4.1),"turn":Vector3(-13.2,3.7,-4.1),"end":Vector3(-14.7,3.7,-4.1),"exit":Vector3(-14.7,3.7,-6.4)})
 	# Second straight stair runs along the west face of the tower, as marked in the image.
-	flight(Vector3(6.85,0,5.2),Vector3.FORWARD,20,.18,.48,1.6)
+	flight(Vector3(6.85,0,1.52),Vector3.FORWARD,18,.20,.32,1.6)
 	floorboards(Vector3(6.8,3.6,-4.95),Vector2(2.4,2.1))
-	rail(Vector3(5.6,3.6,-6),Vector3(5.6,3.6,-3.9))
-	rail(Vector3(7.95,3.6,-5),Vector3(7.95,3.6,-3.9))
-	stair_routes.append({"start":Vector3(6.85,.08,5.85),"mid":Vector3(6.85,1.9,.7),"turn":Vector3(6.85,3.7,-4),"end":Vector3(6.85,3.7,-4.8),"exit":Vector3(6.85,3.7,-6.5)})
+	rail(Vector3(5.55,3.6,-5),Vector3(6.06,3.6,-5))
+	rail(Vector3(6.06,3.6,-5),Vector3(6.06,3.6,-3.92))
+	rail(Vector3(7.64,3.6,-5),Vector3(7.64,3.6,-3.92))
+	stair_routes.append({"start":Vector3(6.85,.08,2.17),"mid":Vector3(6.85,1.9,-1.04),"turn":Vector3(6.85,3.7,-4),"end":Vector3(6.85,3.7,-4.8),"exit":Vector3(6.85,3.7,-6.5)})
 	tiled_plane(Vector3(-17.6,7.15,-8.3),Vector3(26.0,0,0),Vector3(0,-.70,4.95),true)
-	# Matching timber canopy covers the new tower-side stair without posts in its path.
-	tiled_plane(Vector3(5.65,6.75,-5.9),Vector3(2.6,0,0),Vector3(0,-3.1,11.8),true)
-	for z in [-3.8,.8,5.5]:
-		var h: float = 6.75-(z+5.9)/11.8*3.1
-		beam(Vector3(5.65,0,z),Vector3(5.65,h,z),.19,"beam",true)
-		beam(Vector3(5.65,h-.45,z),Vector3(6.35,h,z),.12)
+	# Shed roof falls across the stair, from a ledger recessed in the tower wall.
+	tiled_plane(Vector3(8.15,6.75,-6.2),Vector3(0,0,8.55),Vector3(-2.80,-.90,0),true)
+	beam(Vector3(8.15,6.57,-6.2),Vector3(8.15,6.57,2.35),.28)
+	beam(Vector3(5.55,5.73,-6.2),Vector3(5.55,5.73,2.35),.28)
+	for z in [-5.8,-2.2,1.8]:
+		beam(Vector3(5.55,0,z),Vector3(5.55,5.85,z),.28,"beam",true)
+		beam(Vector3(5.55,5.1,z),Vector3(6.35,5.98,z),.20)
+	# Bearers below both upper landings, seated on the gallery structure.
+	for z in [-4.85,-3.45]:
+		beam(Vector3(-16.15,3.28,z),Vector3(-12.9,3.28,z),.28)
+	for x in [6.15,7.65]:
+		beam(Vector3(x,3.28,-6.2),Vector3(x,3.28,-3.85),.28)
 
 func defensive_walk() -> void:
 	floorboards(Vector3(-16.6,3.6,4.6),Vector2(1.8,24.2))
@@ -598,16 +610,23 @@ func defensive_walk() -> void:
 	rail(Vector3(-15.6,3.6,15.65),Vector3(13.1,3.6,15.65))
 	rail(Vector3(15.9,3.6,15.65),Vector3(17.35,3.6,15.65))
 	for z in range(-4,17,3):
-		beam(Vector3(-17.6,3.47,z),Vector3(-15.65,3.47,z),.22)
-		beam(Vector3(-17.55,1.9,z),Vector3(-15.7,3.4,z),.20)
+		beam(Vector3(-17.90,3.40,z),Vector3(-15.65,3.40,z),.30)
+		beam(Vector3(-17.90,1.9,z),Vector3(-15.7,3.25,z),.30)
 	for x in range(-16,18,3):
-		beam(Vector3(x,3.47,17.55),Vector3(x,3.47,15.65),.22)
-		beam(Vector3(x,1.9,17.55),Vector3(x,3.4,15.7),.20)
-	# The gate-side stair also runs parallel to its gallery.
-	flight(Vector3(-5.0,0,14.5),Vector3.LEFT,20,.18,.48,1.65)
-	floorboards(Vector3(-15.2,3.6,14.65),Vector2(2.6,2.3))
-	rail(Vector3(-15.6,3.6,13.5),Vector3(-14,3.6,13.5))
-	stair_routes.append({"start":Vector3(-4.45,.08,14.5),"mid":Vector3(-14.2,3.7,14.5),"turn":Vector3(-16.5,3.7,14.5),"end":Vector3(-16.5,3.7,16.6),"exit":Vector3(-12.0,3.7,16.6)})
+		beam(Vector3(x,3.40,17.90),Vector3(x,3.40,15.65),.30)
+		beam(Vector3(x,1.9,17.90),Vector3(x,3.25,15.7),.30)
+	for x in [-17.2,-15.9]:
+		beam(Vector3(x,3.24,-7.5),Vector3(x,3.24,17.3),.30)
+	for z in [16.0,17.2]:
+		beam(Vector3(-17.5,3.24,z),Vector3(20,3.24,z),.30)
+	# Rotate the gate stair onto the west side of the corner, along its gallery.
+	flight(Vector3(-14.6,0,8.80),Vector3.BACK,18,.20,.32,1.65)
+	floorboards(Vector3(-15.55,3.6,15.05),Vector2(3.90,1.9))
+	rail(Vector3(-13.785,3.6,14.24),Vector3(-13.785,3.6,15.65))
+	rail(Vector3(-13.785,3.6,15.65),Vector3(-15.6,3.6,15.65))
+	for x in [-15.3,-13.8]:
+		beam(Vector3(x,3.25,14.1),Vector3(x,3.25,16.3),.30)
+	stair_routes.append({"start":Vector3(-14.6,.08,8.15),"mid":Vector3(-14.6,1.9,11.36),"turn":Vector3(-14.6,3.7,15.05),"end":Vector3(-16.5,3.7,15.05),"exit":Vector3(-16.5,3.7,16.6)})
 	stone_floor(Vector3(18.75,3.6,-.25),Vector2(2.7,36.5))
 	stone_floor(Vector3(1.1,3.6,-18.75),Vector2(35.3,2.7))
 	rail(Vector3(17.35,3.6,-17.4),Vector3(17.35,3.6,-4.9))

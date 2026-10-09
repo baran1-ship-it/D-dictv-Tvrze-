@@ -130,6 +130,9 @@ func run() -> void:
 				print("Stair failure: ",name," player=",game.player.position," target=",route[name])
 				break
 		check(passed,"capsule should climb staircase from "+str(route.start))
+		if passed and game.world.stair_routes.find(route)<3:
+			for name in ["end","turn","mid","start"]:
+				check(await walk_to(route[name]),"external stair and landing must also work downhill: "+str(route.start))
 	game.player.position = game.world.wall_routes[0]
 	game.player.velocity = Vector3.ZERO
 	for frame in range(8):

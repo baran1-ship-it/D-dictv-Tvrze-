@@ -26,6 +26,8 @@ func run() -> void:
 	await shot("stairs-tower.png",Vector3(1,.1,9),-.65,.28)
 	await shot("gallery-join.png",Vector3(-14.7,3.7,-6.4),1.57,-.03)
 	await shot("landing.png",Vector3(-14.7,3.7,-4.1),0,-.35)
+	await shot("stairs-gate.png",Vector3(-7,.1,8),1.8,.32)
+	await shot("gallery-bearers.png",Vector3(-12,.1,12),1.57,.45)
 	var south = game.world.doors.filter(func(d): return d.title=="Přístup na hradby")[0]
 	south.toggle(Vector3(14.5,3.7,14.1))
 	await create_timer(.8).timeout
