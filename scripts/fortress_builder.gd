@@ -313,7 +313,7 @@ func floorboards(pos: Vector3, size: Vector2, across_x := false) -> void:
 		collision(Transform3D(Basis.IDENTITY,pos-Vector3(0,.07,0)),Vector3(size.x,.14,size.y))
 		var count_x := int(ceil(size.y/.3))
 		for i in range(count_x):
-			timber(pos+Vector3(0,-.045,-size.y*.5+(i+.5)*size.y/count_x),Vector3(size.y/count_x-.009,size.x-.012,.09),false,"wood",Vector3.RIGHT)
+			timber(pos+Vector3(0,-.045,-size.y*.5+(i+.5)*size.y/count_x),Vector3(.09,size.x-.012,size.y/count_x-.009),false,"wood",Vector3.RIGHT)
 		return
 	floor_patches.append({"pos":pos,"size":size})
 	collision(Transform3D(Basis.IDENTITY,pos-Vector3(0,.07,0)),Vector3(size.x,.14,size.y))
