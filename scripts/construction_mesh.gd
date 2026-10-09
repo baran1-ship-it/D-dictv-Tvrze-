@@ -9,7 +9,7 @@ static func quad(s: SurfaceTool, points: Array, normal: Vector3, uv_scale := Vec
 		s.set_uv(uv[i]+phase)
 		s.add_vertex(points[i])
 
-static func block(size: Vector3, bevel: float, grain := false, phase := Vector2.ZERO) -> ArrayMesh:
+static func block(size: Vector3, bevel: float, grain := false, phase := Vector2.ZERO, irregularity := 0.0, random_seed := 0) -> ArrayMesh:
 	var s := SurfaceTool.new()
 	s.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var x := size.x*.5
@@ -17,6 +17,13 @@ static func block(size: Vector3, bevel: float, grain := false, phase := Vector2.
 	var z := size.z*.5
 	var b := minf(bevel,minf(x,minf(y,z))*.8)
 	var ring := [Vector2(-x+b,-z),Vector2(x-b,-z),Vector2(x,-z+b),Vector2(x,z-b),Vector2(x-b,z),Vector2(-x+b,z),Vector2(-x,z-b),Vector2(-x,-z+b)]
+	if irregularity>0:
+		var random := RandomNumberGenerator.new()
+		random.seed = random_seed
+		for i in range(ring.size()):
+			var point: Vector2 = ring[i]
+			point += Vector2(random.randf_range(-irregularity,irregularity)*size.x,random.randf_range(-irregularity,irregularity)*size.z)
+			ring[i] = point
 	var top: Array = []
 	var bottom: Array = []
 	for p in ring:

@@ -191,8 +191,8 @@ func make_materials() -> void:
 		mats["tile"+str(i)] = mats.stone.duplicate()
 		mats["tile"+str(i)].albedo_color = Color("925c41")*(.78+i*.07)
 		mats["tile"+str(i)].normal_scale = .08
-		mesh_cache["rock"+str(i)] = Construction.block(Vector3.ONE,.12+i*.009)
-		mesh_cache["cobble"+str(i)] = Construction.block(Vector3.ONE,.17+i*.008)
+		mesh_cache["rock"+str(i)] = Construction.block(Vector3.ONE,.12+i*.009,false,Vector2.ZERO,.055,1403+i)
+		mesh_cache["cobble"+str(i)] = Construction.block(Vector3.ONE,.17+i*.008,false,Vector2.ZERO,.04,2403+i)
 		mesh_cache["tile"+str(i)] = Construction.block(Vector3(.39,.055,.53),.02)
 
 func batch(mesh: Mesh, transform: Transform3D, material_id: String) -> void:
@@ -304,7 +304,8 @@ func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 			for side in [-1,1]:
 				var depth := rng.randf_range(.10,.16)
 				var offset := Vector3(start+w/2,-size.y/2+(row+.5)*h,side*(size.z/2+.015))
-				var scale := Vector3(maxf(.02,w-.022),maxf(.02,h-.028),depth)
+				offset.y += rng.randf_range(-.018,.018)
+				var scale := Vector3(maxf(.02,w-.022),maxf(.02,h-.028+rng.randf_range(-.035,.015)),depth)
 				batch(mesh_cache[id],Transform3D(basis.scaled_local(scale),pos+basis*offset),id)
 				stone_count += 1
 			start += w
