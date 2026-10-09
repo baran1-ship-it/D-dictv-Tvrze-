@@ -27,7 +27,7 @@ func configure(wood: Material, iron: Material, door_title: String) -> void:
 	var wood_batch := SurfaceTool.new()
 	wood_batch.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for i in range(9):
-		var board := preload("res://scripts/construction_mesh.gd").block(Vector3(width/9-.004,height,.13),.008,true)
+		var board := preload("res://scripts/construction_mesh.gd").block(Vector3(width/9-.004,height,.13),.008,true,Vector2(i*.117+absf(position.x)*.04,i*.13))
 		wood_batch.append_from(board,0,Transform3D(Basis.IDENTITY,Vector3((i+.5)*width/9,height/2,0)))
 	var panel := MeshInstance3D.new()
 	panel.mesh = wood_batch.commit()

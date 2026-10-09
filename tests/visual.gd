@@ -7,7 +7,7 @@ func shot(file: String, pos: Vector3, yaw: float, pitch: float) -> void:
 	game.player.rotation.y = yaw
 	game.pitch = pitch
 	game.camera.rotation.x = pitch
-	for i in range(10):
+	for i in range(4):
 		await physics_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://build/"+file)
@@ -19,8 +19,8 @@ func run() -> void:
 	game.message_time = 0
 	game.hint.text = ""
 	await shot("courtyard.png",Vector3(-3,.1,10),-.18,-.13)
-	await shot("east-wing.png",Vector3(-3,.1,8),-.75,-.10)
-	await shot("wall-walk.png",Vector3(-16.5,4.6,8),2.9,-.06)
+	await shot("east-wing.png",Vector3(-3,.1,8),-1.25,-.13)
+	await shot("wall-walk.png",Vector3(-16.5,4.6,8),3.25,-.06)
 	await shot("tower-stairs.png",Vector3(14,3.7,-.4),1.15,.05)
 	await shot("door-hand.png",Vector3(-8.8,.1,-7.0),0,0)
 	game.interact()

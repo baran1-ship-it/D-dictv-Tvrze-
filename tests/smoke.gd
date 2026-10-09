@@ -37,8 +37,8 @@ func run() -> void:
 	root.add_child(game)
 	for frame in range(10):
 		await physics_frame
-	check(game.world.doors.size()==17,"17 usable doors should be present")
-	check(game.world.stair_routes.size()==6,"gallery, wall access and three tower flights should exist")
+	check(game.world.doors.size()==18,"18 usable doors should be present")
+	check(game.world.stair_routes.size()==7,"gallery, wall access and three tower flights should exist")
 	check(not game.has_method("release_arrow"),"archery must be absent")
 	var c = game.controls
 	var center: Vector2 = c.joystick_center()
@@ -115,7 +115,10 @@ func run() -> void:
 	for frame in range(8):
 		await physics_frame
 	for point in game.world.wall_routes.slice(1):
-		check(await walk_to(point),"wall walk must connect through courtyard corners and across gate")
+		var passed: bool = await walk_to(point)
+		if not passed:
+			print("Wall failure: player=",game.player.position," target=",point)
+		check(passed,"wall walk must connect through courtyard corners and across gate")
 	# Check every threshold has support on both sides, and no overhead collision.
 	for d in game.world.doors:
 		for side in [-1,1]:

@@ -1,15 +1,15 @@
 extends RefCounted
 
 # Closed chamfered solids; tiny gaps and variation are geometry, not painted seams.
-static func quad(s: SurfaceTool, points: Array, normal: Vector3, uv_scale := Vector2.ONE) -> void:
+static func quad(s: SurfaceTool, points: Array, normal: Vector3, uv_scale := Vector2.ONE, phase := Vector2.ZERO) -> void:
 	var order := [0,2,1,0,3,2] if (points[1]-points[0]).cross(points[2]-points[0]).dot(normal)>0 else [0,1,2,0,2,3]
 	var uv := [Vector2.ZERO,Vector2(uv_scale.x,0),uv_scale,Vector2(0,uv_scale.y)]
 	for i in order:
 		s.set_normal(normal)
-		s.set_uv(uv[i])
+		s.set_uv(uv[i]+phase)
 		s.add_vertex(points[i])
 
-static func block(size: Vector3, bevel: float, grain := false) -> ArrayMesh:
+static func block(size: Vector3, bevel: float, grain := false, phase := Vector2.ZERO) -> ArrayMesh:
 	var s := SurfaceTool.new()
 	s.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var x := size.x*.5
@@ -25,7 +25,7 @@ static func block(size: Vector3, bevel: float, grain := false) -> ArrayMesh:
 	for i in range(8):
 		var j := (i+1)%8
 		var n := Vector3((ring[i]+ring[j]).x,0,(ring[i]+ring[j]).y).normalized()
-		quad(s,[bottom[i],bottom[j],top[j],top[i]],n,Vector2(ring[i].distance_to(ring[j])*.7,size.y*.7) if grain else Vector2.ONE)
+		quad(s,[bottom[i],bottom[j],top[j],top[i]],n,Vector2(ring[i].distance_to(ring[j])*.7,size.y*.7) if grain else Vector2.ONE, phase)
 		var ti := Vector3(ring[i].x*.92,y,ring[i].y*.92)
 		var tj := Vector3(ring[j].x*.92,y,ring[j].y*.92)
 		var bi := Vector3(ti.x,-y,ti.z)
@@ -36,7 +36,7 @@ static func block(size: Vector3, bevel: float, grain := false) -> ArrayMesh:
 			var center := Vector3(0,side*y,0)
 			var a := Vector3(ti.x,side*y,ti.z)
 			var c := Vector3(tj.x,side*y,tj.z)
-			var norm := Vector3.UP*side
+			var norm: Vector3 = Vector3.UP*side
 			var vertices := [center,c,a] if (c-center).cross(a-center).dot(norm)<0 else [center,a,c]
 			for v in vertices:
 				s.set_normal(norm)

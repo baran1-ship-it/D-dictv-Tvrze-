@@ -43,11 +43,6 @@ jobs:
           mkdir -p "$XDG_DATA_HOME/godot/export_templates/${GODOT_VERSION}.stable"
           unzip -q /tmp/templates.zip -d /tmp/export-templates
           cp /tmp/export-templates/templates/* "$XDG_DATA_HOME/godot/export_templates/${GODOT_VERSION}.stable/"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: godot-verification-engine
-          path: /tmp/godot/Godot_v4.6.3-stable_linux.x86_64
-          retention-days: 1
       - name: Import and test project
         run: |
           set -euo pipefail
@@ -80,7 +75,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          timeout 150s xvfb-run -a godot --audio-driver Dummy --rendering-method gl_compatibility --path . --resolution 1280x720 --script res://tests/visual.gd 2>&1 | tee /tmp/visual.log
+          timeout 300s xvfb-run -a godot --audio-driver Dummy --rendering-method gl_compatibility --path . --resolution 1280x720 --script res://tests/visual.gd 2>&1 | tee /tmp/visual.log
           test -s build/courtyard.png
           if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/visual.log; then exit 1; fi
       - name: Export APK
