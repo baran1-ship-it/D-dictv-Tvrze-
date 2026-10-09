@@ -29,6 +29,7 @@ static func face(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size:
 	var spacing := Vector2(.43,.29) if style=="curtain" else Vector2(.60,.39)
 	if style=="palace": spacing = Vector2(.37,.28)
 	if paving: spacing = Vector2(.38,.31) if style=="path" else Vector2(.56,.44)
+	spacing *= .90+float(abs(seed_value)%17)*.014
 	var nx := maxi(1,int(ceil(size.x/spacing.x)))
 	var ny := maxi(1,int(ceil(size.y/spacing.y)))
 	var sites: Array[Vector2] = []
@@ -48,11 +49,12 @@ static func face(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size:
 					if other==site: continue
 					poly = clip(poly,other-site,(other.length_squared()-site.length_squared())*.5)
 			if poly.size()<3: continue
-			if paving:
+			if paving and style=="path":
 				var world := origin+u*site.x+v*site.y
 				if not yard_path(world): continue
-			var phase := Vector2(rng.randf(),rng.randf())
-			var depth := rng.randf_range(.014,.038) if not paving else rng.randf_range(.008,.022)
+			var tile := rng.randi_range(0,3)
+			var phase := Vector2((tile%2)*.5,(tile/2)*.5)+Vector2(rng.randf_range(.015,.08),rng.randf_range(.015,.08))
+			var depth := rng.randf_range(.014,.038) if not paving else rng.randf_range(.004,.012)
 			var shade := rng.randf_range(.83,1.0)
 			var tint := Color(shade,shade*rng.randf_range(.96,1.01),shade*rng.randf_range(.91,.98))
 			if not paving and origin.y+site.y<.48: tint *= .76
@@ -65,8 +67,8 @@ static func face(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size:
 				back.append(origin+u*edge.x+v*edge.y-normal*.015)
 				rim.append(origin+u*edge.x+v*edge.y+normal*depth*.45)
 				var inset: Vector2 = site+(edge-site)*.91
-				front.append(origin+u*inset.x+v*inset.y+normal*(depth+rng.randf_range(-.012,.012)))
-				tex.append(edge*.65+phase)
+				front.append(origin+u*inset.x+v*inset.y+normal*(depth+(rng.randf_range(-.004,.004) if paving else rng.randf_range(-.012,.012))))
+				tex.append((edge-site)*.30+Vector2(.20,.20)+phase)
 			var center := origin+u*site.x+v*site.y+normal*(depth+.007)
 			var rear := origin+u*site.x+v*site.y-normal*.015
 			for k in range(poly.size()):
@@ -81,8 +83,8 @@ static func face(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size:
 				triangle(s,rim[k],front[n],front[k],[tex[k],tex[n],tex[k]],bevel,tint)
 				var fn := (front[k]-center).cross(front[n]-center).normalized()
 				if fn.dot(normal)<0: fn = -fn
-				triangle(s,center,front[k],front[n],[site*.65+phase,tex[k],tex[n]],fn,tint)
-				triangle(s,rear,back[n],back[k],[site*.65+phase,tex[n],tex[k]],-normal,tint)
+				triangle(s,center,front[k],front[n],[Vector2(.20,.20)+phase,tex[k],tex[n]],fn,tint)
+				triangle(s,rear,back[n],back[k],[Vector2(.20,.20)+phase,tex[n],tex[k]],-normal,tint)
 			stones += 1
 	if stones==0: return {"mesh":ArrayMesh.new(),"stones":0}
 	s.index()
@@ -100,7 +102,7 @@ static func yard_path(p: Vector3) -> bool:
 	return main or east or north or entry or stair or edge
 
 # One spatial damage field across adjacent wall pieces avoids rectangular plaster stickers.
-static func plaster(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size: Vector2, interior := false) -> ArrayMesh:
+static func plaster(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size: Vector2, interior := false, min_y := -100.0) -> ArrayMesh:
 	var s := SurfaceTool.new()
 	s.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var nx := maxi(1,int(ceil(size.x/.23)))
@@ -115,7 +117,7 @@ static func plaster(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, si
 			for point in corners:
 				var p: Vector3 = origin+u*point.x+v*point.y
 				var field := sin(p.x*.51+p.z*.31)+.55*sin(p.x*1.31-p.z*.67+p.y*.47)+.35*cos(p.y*1.15+p.x*.74)+.12*sin(p.x*11+p.y*13+p.z*9)
-				values.append(maxf(field-(1.75 if interior else .95),(.55-p.y)*4))
+				values.append(maxf(maxf(field-(1.75 if interior else .95),(.55-p.y)*4),(min_y-p.y)*4))
 			for k in range(4):
 				var next := (k+1)%4
 				if values[k]<=0: poly.append(corners[k])

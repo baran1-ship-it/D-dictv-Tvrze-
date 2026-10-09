@@ -19,7 +19,7 @@ func touch(index: int, position: Vector2, pressed: bool) -> void:
 	game.controls._input(event)
 
 func walk_to(target: Vector3) -> bool:
-	for i in range(350):
+	for i in range(900):
 		var current: Vector3 = game.player.position
 		var offset := Vector2(target.x-current.x,target.z-current.z)
 		if offset.length()<.22:
@@ -38,7 +38,7 @@ func run() -> void:
 	root.add_child(game)
 	for frame in range(10):
 		await physics_frame
-	check(game.world.doors.size()==20,"18 doors and two gate leaves should be present")
+	check(game.world.doors.size()==24,"22 doors and two gate leaves should be present")
 	check(game.world.stair_routes.size()==6,"three straight external stairs and three tower flights should exist")
 	check(not game.has_method("release_arrow"),"archery must be absent")
 	var c = game.controls
@@ -109,7 +109,7 @@ func run() -> void:
 		check(supported,"visible landing must reach the wall at "+str(pos))
 	# Guard the enlarged tower turning platforms on their exposed side.
 	for y in [2.5,6.63,9.89]:
-		var query := PhysicsRayQueryParameters3D.create(Vector3(11.3,y+.6,-6.3),Vector3(12.0,y+.6,-6.3))
+		var query := PhysicsRayQueryParameters3D.create(Vector3(10.9,y+.6,-6.3),Vector3(12.0,y+.6,-6.3))
 		query.exclude = [game.player.get_rid()]
 		check(not game.get_world_3d().direct_space_state.intersect_ray(query).is_empty(),"tower turning landing needs an effective guard")
 	for normal in game.world.roof_normals:
@@ -118,7 +118,7 @@ func run() -> void:
 		check(not (d.title=="Obytné křídlo" and d.position.y>1),"upper yard door must be replaced by a window")
 		check(absf(d.handle.position.z)<.001,"handle roots must lie on door plane")
 	# Test the actual vault crown, first-floor slab and 3 m clear tower storeys.
-	check(game.world.vaults.size()==5,"all main ground-floor rooms must have stone vaults")
+	check(game.world.vaults.size()==7,"all main ground-floor rooms must have stone vaults")
 	for v in game.world.vaults:
 		var offset := Vector3(.07,0,.07)
 		var query := PhysicsRayQueryParameters3D.create(v.center+offset+Vector3.UP*4.0,v.center+offset+Vector3.UP*4.8)
@@ -130,6 +130,11 @@ func run() -> void:
 		query.exclude = [game.player.get_rid()]
 		var hit := game.get_world_3d().direct_space_state.intersect_ray(query)
 		check(not hit.is_empty() and absf(hit.get("position",Vector3.ZERO).y-level-3.0)<.03,"tower storey must have 3 m clear height")
+	check(game.world.tower_room_doors.size()==4,"all tower storeys need room doors")
+	for d in game.world.tower_room_doors:
+		check(absf(d.width-1.10)<.001 and absf(d.height-2.10)<.001,"room doors need human proportions")
+		d.toggle(d.global_position+Vector3(-1,0,0))
+	await create_timer(.8).timeout
 	# Verify the actual capsule climbs each staircase, not just geometric markers.
 	for route in game.world.stair_routes:
 		game.player.position = route.start
@@ -146,6 +151,23 @@ func run() -> void:
 		if passed:
 			for name in ["end","turn","mid","start"]:
 				check(await walk_to(route[name]),"stair and landing must also work downhill: "+str(route.start))
+	for x in [17.6,18.75,19.8]:
+		for z in [-19.9,-18.75,-17.5]:
+			var visible := false
+			for f in game.world.floor_patches:
+				if absf(f.pos.y-5)<.02 and Rect2(Vector2(f.pos.x,f.pos.z)-f.size*.5,f.size).has_point(Vector2(x,z)): visible = true
+			check(visible,"north-east corner needs continuous visible floor")
+	for d in game.world.tower_room_doors:
+		game.player.position = d.to_global(Vector3(0,.1,.65))
+		game.player.velocity = Vector3.ZERO
+		for frame in range(8): await physics_frame
+		check(await walk_to(d.to_global(Vector3(0,.1,-.85))),"tower door must be traversable")
+		check(await walk_to(d.to_global(Vector3(0,.1,.65))),"tower doorway must allow return")
+	game.player.position = Vector3(18.75,.1,15.4)
+	game.player.velocity = Vector3.ZERO
+	for frame in range(8): await physics_frame
+	for point in [Vector3(18.75,.1,-18.75),Vector3(-16.4,.1,-18.75),Vector3(18.75,.1,-18.75),Vector3(18.75,.1,15.4)]:
+		check(await walk_to(point),"vaulted passage must support movement and return")
 	game.player.position = game.world.wall_routes[0]
 	game.player.velocity = Vector3.ZERO
 	for frame in range(8):
@@ -155,6 +177,9 @@ func run() -> void:
 		if not passed:
 			print("Wall failure: player=",game.player.position," target=",point)
 		check(passed,"wall walk must connect through courtyard corners and across gate")
+	var reverse: Array = game.world.wall_routes.duplicate()
+	reverse.reverse()
+	for point in reverse.slice(1): check(await walk_to(point),"complete wall walk must also allow return")
 	game.player.position = Vector3(-14.7,5.1,-6.4)
 	game.player.velocity = Vector3.ZERO
 	for frame in range(8): await physics_frame
@@ -192,7 +217,7 @@ func run() -> void:
 	# Check every threshold has support on both sides, and no overhead collision.
 	for d in game.world.doors:
 		for side in [-1,1]:
-			for offset in [-.7,0.0,.7]:
+			for offset in [-d.width*.28,0.0,d.width*.28]:
 				var pos: Vector3 = d.to_global(Vector3(offset,.15,side*.65))
 				var query := PhysicsRayQueryParameters3D.create(pos+Vector3(0,.15,0),pos-Vector3(0,.65,0))
 				query.exclude = [game.player.get_rid()]

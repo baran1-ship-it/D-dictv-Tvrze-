@@ -8,8 +8,8 @@ var handle: Node3D
 var opened := false
 var busy := false
 var title := "Dveře"
-var width := 2.1
-var height := 2.65
+var width := 1.10
+var height := 2.10
 var opening_side := 0.0
 
 func configure(wood: Material, iron: Material, door_title: String) -> void:
@@ -53,7 +53,7 @@ func configure(wood: Material, iron: Material, door_title: String) -> void:
 			rivet.position = Vector3(x, y, 0.095)
 			body.add_child(rivet)
 	handle = Node3D.new()
-	handle.position = Vector3(width - 0.45, 1.10, 0.0)
+	handle.position = Vector3(width-minf(.28,width*.19),1.05,0)
 	body.add_child(handle)
 	for side in [-1, 1]:
 		var ring := MeshInstance3D.new()

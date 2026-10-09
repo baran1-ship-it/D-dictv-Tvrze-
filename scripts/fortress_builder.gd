@@ -5,6 +5,8 @@ const UPPER_CLEAR := 3.0
 const FLOOR_STEP := 3.26
 const TOWER_LEVELS := [0.0,5.0,8.26,11.52]
 var vaults: Array = []
+var wall_finish_override := ""
+var tower_room_doors: Array = []
 var rail_posts: Dictionary = {}
 const Door = preload("res://scripts/fortress_door.gd")
 const Construction = preload("res://scripts/construction_mesh.gd")
@@ -37,7 +39,7 @@ func build() -> void:
 	static_body = StaticBody3D.new()
 	add_child(static_body)
 	box(Vector3(0,-.45,0),Vector3(170,.8,170),"grass",true)
-	box(Vector3(0,-.08,0),Vector3(36,.16,36),"earth",true)
+	box(Vector3(0,-.08,0),Vector3(36,.16,36),"mortar",true)
 	courtyard()
 	for i in range(24):
 		var angle := i*2.39996
@@ -185,11 +187,12 @@ func make_materials() -> void:
 	mats.roofscan.vertex_color_use_as_albedo = true
 	mats.roofscan.roughness_texture = null
 	mats.roofscan.roughness = .98
-	mats.rock3d = pbr("rock_face_03",Color("c6b69d"))
+	mats.rock3d = pbr("rock_face_03",Color("b8b3a6"))
 	mats.rock3d.vertex_color_use_as_albedo = true
-	mats.rock3d.uv1_triplanar = true
-	mats.rock3d.uv1_world_triplanar = true
-	mats.rock3d.uv1_scale = Vector3.ONE*.85
+	mats.rock3d.uv1_triplanar = false
+	mats.rock3d.uv1_world_triplanar = false
+	mats.rock3d.uv1_scale = Vector3.ONE
+	stone_atlas(mats.rock3d)
 	mats.stone_floor = mats.rock3d.duplicate()
 	mats.stone_floor.albedo_color = Color("a49d8e")
 	mats.towerstone = mats.rubble.duplicate()
@@ -199,16 +202,16 @@ func make_materials() -> void:
 	mats.rubble_edge.uv1_world_triplanar = true
 	mats.rubble_edge.uv1_scale = Vector3.ONE*.5
 	mats.mortar = plain(Color("756e60"))
-	mats.vault_stone = mats.trim.duplicate()
+	mats.vault_stone = mats.rock3d.duplicate()
 	mats.vault_stone.vertex_color_use_as_albedo = true
-	mats.vault_stone.albedo_color = Color("c8c1ac")
+	mats.vault_stone.albedo_color = Color("b8b3a6")
 	mats.palace_rock = mats.rock3d.duplicate()
-	mats.palace_rock.albedo_color = Color("c5ae8e")
+	mats.palace_rock.albedo_color = Color("b8b3a6")
 	mats.tower_rock = mats.rock3d.duplicate()
-	mats.tower_rock.albedo_color = Color("aca79a")
+	mats.tower_rock.albedo_color = Color("b8b3a6")
 	mats.path_rock = mats.rock3d.duplicate()
 	mats.path_rock.albedo_color = Color("b5ac98")
-	mats.path_rock.uv1_scale = Vector3.ONE*.65
+	mats.path_rock.uv1_scale = Vector3.ONE
 	mats.earth = earth_material()
 	mats.clay = plain(Color("a97451"),.94)
 	mats.clay.vertex_color_use_as_albedo = true
@@ -326,25 +329,82 @@ func floorboards(pos: Vector3, size: Vector2, across_x := false) -> void:
 			var length := size.y/sections
 			timber(Vector3(x,pos.y-.045,pos.z-size.y/2+(j+.5)*length),Vector3(width-.009,length-.012,.09),false,"wood",Vector3.FORWARD)
 
+func stone_atlas(material: StandardMaterial3D) -> void:
+	# Four coherent scanned patches share one material and one draw batch.
+	for channel in ["diff","normal","rough","ao"]:
+		var atlas := Image.create(1024,1024,false,Image.FORMAT_RGB8)
+		for i in range(4):
+			var asset := "rock_face_03" if i%2==0 else "stone_wall"
+			var image := (load("res://assets/materials/pbr/"+asset+"_"+channel+".jpg") as Texture2D).get_image()
+			if channel=="diff" and i==2: image = (load("res://assets/materials/rock.jpg") as Texture2D).get_image()
+			if image.is_compressed(): image.decompress()
+			image.clear_mipmaps()
+			image.resize(1024,1024)
+			image.convert(Image.FORMAT_RGB8)
+			atlas.blit_rect(image,Rect2i((i%2)*256,(i/2)*256,512,512),Vector2i((i%2)*512,(i/2)*512))
+		atlas.generate_mipmaps(channel=="normal")
+		var texture := ImageTexture.create_from_image(atlas)
+		if channel=="diff": material.albedo_texture = texture
+		elif channel=="normal": material.normal_texture = texture
+		elif channel=="rough": material.roughness_texture = texture
+		else: material.ao_texture = texture
+
 func earth_material() -> StandardMaterial3D:
-	var image := Image.create(256,256,false,Image.FORMAT_RGB8)
+	var image := Image.create(512,512,false,Image.FORMAT_RGB8)
+	var rough := Image.create(512,512,false,Image.FORMAT_RGB8)
 	var noise := FastNoiseLite.new()
 	noise.seed = 1437
-	noise.frequency = .035
+	noise.frequency = .32
 	noise.fractal_octaves = 4
-	for y in range(256):
-		for x in range(256):
-			var shade := .80+noise.get_noise_2d(x,y)*.23
-			image.set_pixel(x,y,Color(.36,.28,.19)*shade)
+	for y in range(512):
+		for x in range(512):
+			var p := Vector2(x/511.0*36-18,y/511.0*36-18)
+			var broad := noise.get_noise_2d(p.x,p.y)
+			var fine := noise.get_noise_2d(p.x*23,p.y*23)
+			var damp := clampf((broad+.12)*1.7,0,1)
+			var color := Color("786b54").lerp(Color("514b3e"),damp)*(.94+fine*.16)
+			if p.x < -14.3 and not Masonry.yard_path(Vector3(p.x,0,p.y)):
+				color = color.lerp(Color("596047"),clampf(broad+.4,0,.5))
+			image.set_pixel(x,y,color)
+			rough.set_pixel(x,y,Color.WHITE*(.93-.18*damp))
+	var normal := image.duplicate() as Image
+	normal.bump_map_to_normal_map(.3)
 	image.generate_mipmaps()
+	rough.generate_mipmaps()
+	normal.generate_mipmaps(true)
 	var mat := plain(Color.WHITE)
 	mat.albedo_texture = ImageTexture.create_from_image(image)
-	mat.uv1_triplanar = true
-	mat.uv1_world_triplanar = true
-	mat.uv1_scale = Vector3.ONE*.18
+	mat.roughness_texture = ImageTexture.create_from_image(rough)
+	mat.normal_enabled = true
+	mat.normal_texture = ImageTexture.create_from_image(normal)
+	mat.normal_scale = .20
 	return mat
 
+func yard_surface() -> void:
+	var s := SurfaceTool.new()
+	s.begin(Mesh.PRIMITIVE_TRIANGLES)
+	Construction.quad(s,[Vector3(-18,.002,-18),Vector3(18,.002,-18),Vector3(18,.002,18),Vector3(-18,.002,18)],Vector3.UP)
+	s.index()
+	batch(s.commit(),Transform3D.IDENTITY,"earth")
+	mats.water = plain(Color("535d55"),.12,.18)
+	mats.water.normal_enabled = true
+	mats.water.normal_texture = mats.earth.normal_texture
+	mats.water.normal_scale = .04
+	for puddle in [Vector4(-11,8.2,1.25,.70),Vector4(-15.4,2.8,.85,.48),Vector4(4.6,12.6,.72,.45)]:
+		var pool := SurfaceTool.new()
+		pool.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var center := Vector3(puddle.x,.006,puddle.y)
+		for i in range(18):
+			var a := i*TAU/18
+			var b := (i+1)*TAU/18
+			var pa := center+Vector3(cos(a)*puddle.z*(1+.12*sin(a*3)),0,sin(a)*puddle.w)
+			var pb := center+Vector3(cos(b)*puddle.z*(1+.12*sin(b*3)),0,sin(b)*puddle.w)
+			Masonry.triangle(pool,center,pa,pb,[Vector2(.5,.5),Vector2(cos(a),sin(a))*.5+Vector2(.5,.5),Vector2(cos(b),sin(b))*.5+Vector2(.5,.5)],Vector3.UP,Color.WHITE)
+		pool.index()
+		batch(pool.commit(),Transform3D.IDENTITY,"water")
+
 func courtyard() -> void:
+	yard_surface()
 	# Continuous flat collision is retained; visible stones only rise a few centimetres.
 	var relief := Masonry.face(Vector3(-18,.009,-18),Vector3.RIGHT,Vector3.BACK,Vector3.UP,Vector2(36,36),1403,"path",true)
 	batch(relief.mesh,Transform3D.IDENTITY,"path_rock")
@@ -363,9 +423,10 @@ func courtyard() -> void:
 func stone_floor(pos: Vector3, size: Vector2) -> void:
 	floor_patches.append({"pos":pos,"size":size})
 	box(pos-Vector3(0,.13,0),Vector3(size.x,.26,size.y),"mortar",true)
-	var surface := Scanned.make(pos-Vector3(size.x*.5,-.016,size.y*.5),Vector3.RIGHT,Vector3.BACK,Vector3.UP,size,heights.rock_face_03,2.7,.025,.12)
+	var surface := Masonry.face(pos-Vector3(size.x*.5,-.004,size.y*.5),Vector3.RIGHT,Vector3.BACK,Vector3.UP,size,int(absf(pos.x*171+pos.y*557+pos.z*313))+1403,"floor",true)
 	batch(surface.mesh,Transform3D.IDENTITY,"stone_floor")
-	relief_cells += surface.cells
+	stone_count += surface.stones
+	relief_cells += surface.stones*6
 
 func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 	var basis := Basis(Vector3.UP,angle)
@@ -392,43 +453,44 @@ func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 		batch(stone.mesh,Transform3D.IDENTITY,material_id)
 		stone_count += stone.stones
 		relief_cells += stone.stones*6
-		if style=="palace":
-			var lime := Masonry.plaster(origin+basis*f[3]*.056,basis*f[1],basis*f[2],basis*f[3],f[4],i==1)
+		if style=="palace" or wall_finish_override=="plaster":
+			var sample: Vector3 = origin+basis*f[1]*f[4].x*.5+basis*f[3]*.12
+			var inside := (sample.z>-16.75 and sample.z< -8.25 and absf(sample.x)<16.75) or (sample.x>8.25 and sample.x<16.75 and sample.z>1.25 and sample.z<14.75)
+			var rear := sample.z< -17.2 or sample.x>17.2
+			var min_y := 5.0 if inside or rear else -100.0
+			if wall_finish_override=="plaster": min_y = -100.0
+			var lime := Masonry.plaster(origin+basis*f[3]*.056,basis*f[1],basis*f[2],basis*f[3],f[4],i==1,min_y)
 			if lime.get_surface_count()>0: batch(lime,Transform3D.IDENTITY,"plaster")
 
 func wall(pos: Vector3, width: float, height: float, centers: Array, titles: Array, angle := 0.0) -> void:
 	var basis := Basis(Vector3.UP,angle)
 	var start := -width/2
-	var short_door := height<3.0
-	var opening_height := 2.38 if short_door else 2.72
+	var half_open := .65
+	var opening_height := 2.16
 	for i in range(centers.size()):
 		var center: float = centers[i]
-		var edge := center-1.13
-		if edge>start:
-			wall_piece(pos+basis*Vector3((start+edge)*.5,height*.5,0),Vector3(edge-start,height,.55),angle)
-		wall_piece(pos+basis*Vector3(center,(height+opening_height)*.5,0),Vector3(2.26,height-opening_height,.55),angle)
+		var edge := center-half_open
+		if edge>start: wall_piece(pos+basis*Vector3((start+edge)*.5,height*.5,0),Vector3(edge-start,height,.55),angle)
+		wall_piece(pos+basis*Vector3(center,(height+opening_height)*.5,0),Vector3(half_open*2,height-opening_height,.55),angle)
 		for side in [-1,1]:
-			var courses := 5 if short_door else 6
-			var course_height := opening_height/courses
-			for j in range(courses):
-				var stone := Construction.block(Vector3(.25,course_height-.016,.74),.025)
-				batch(stone,Transform3D(basis,pos+basis*Vector3(center+side*1.20,(j+.5)*course_height,0)),"trim")
-		var lintel := Construction.block(Vector3(2.65,.18 if short_door else .3,.76),.04)
-		batch(lintel,Transform3D(basis,pos+basis*Vector3(center,2.47 if short_door else 2.84,0)),"trim")
+			for j in range(5):
+				var stone := Construction.block(Vector3(.22,opening_height/5-.016,.74),.025)
+				batch(stone,Transform3D(basis,pos+basis*Vector3(center+side*(half_open+.08),(j+.5)*opening_height/5,0)),"trim")
+		batch(Construction.block(Vector3(1.65,.24,.76),.03),Transform3D(basis,pos+basis*Vector3(center,2.28,0)),"trim")
 		var door := Door.new()
+		door.width = 1.10
+		door.height = 2.10
 		door.position = pos+basis*Vector3(center,0,0)
 		door.rotation.y = angle
 		add_child(door)
-		if short_door: door.height = 2.35
 		door.configure(mats.door,mats.iron,titles[i])
-		if titles[i] in ["Přístup na hradby","Východní hradby"]:
-			door.opening_side = -1.0
-		elif titles[i]=="Obranný ochoz":
+		if titles[i] in ["Přístup na hradby","Východní hradby"]: door.opening_side = -1.0
+		elif titles[i]=="Obranný ochoz" or str(titles[i]).begins_with("Pokoj věže"):
 			door.opening_side = 1.0
+		if str(titles[i]).begins_with("Pokoj věže"): tower_room_doors.append(door)
 		doors.append(door)
-		start = center+1.13
-	if start<width/2:
-		wall_piece(pos+basis*Vector3((start+width/2)*.5,height*.5,0),Vector3(width/2-start,height,.55),angle)
+		start = center+half_open
+	if start<width/2: wall_piece(pos+basis*Vector3((start+width/2)*.5,height*.5,0),Vector3(width/2-start,height,.55),angle)
 
 func window_wall(pos: Vector3, width: float, height: float, centers: Array, angle := 0.0) -> void:
 	var basis := Basis(Vector3.UP,angle)
@@ -635,11 +697,13 @@ func defensive_walk() -> void:
 	for x in [-15.3,-13.8]: beam(Vector3(x,y-.19,14.1),Vector3(x,y-.19,16.3),.30,"beam",false,false)
 	stair_routes.append({"start":Vector3(-14.6,.08,5.91),"mid":Vector3(-14.6,2.7,10.40),"turn":Vector3(-14.6,y+.1,15.05),"end":Vector3(-16.5,y+.1,15.05),"exit":Vector3(-16.5,y+.1,16.6)})
 	stone_floor(Vector3(18.75,y,-.25),Vector2(2.7,36.5))
-	stone_floor(Vector3(1.1,y,-18.75),Vector2(35.3,2.7))
+	stone_floor(Vector3(1.275,y,-18.70),Vector2(37.65,2.80))
+	stone_floor(Vector3(18.75,0,-.65),Vector2(2.7,37.3))
+	stone_floor(Vector3(1.275,0,-18.70),Vector2(37.65,2.80))
+	vaulted_ceiling(Vector3(18.75,0,-.65),Vector2(2.7,37.3),true)
+	vaulted_ceiling(Vector3(1.275,0,-18.70),Vector2(35,2.80))
 	# Building walls already protect the rear walk; guards only border open courtyard edges.
-	rail(Vector3(-16.55,y,-17.35),Vector3(17.35,y,-17.35))
-	rail(Vector3(-16.55,y,-20.1),Vector3(-16.55,y,-17.35))
-	wall_routes = [Vector3(-16.5,y+.1,-4),Vector3(-16.5,y+.1,16.6),Vector3(0,y+.1,16.6),Vector3(18.75,y+.1,16.6),Vector3(18.75,y+.1,-18.75),Vector3(-15.7,y+.1,-18.75)]
+	wall_routes = [Vector3(-16.5,y+.1,-4),Vector3(-16.5,y+.1,16.6),Vector3(0,y+.1,16.6),Vector3(18.75,y+.1,16.6),Vector3(18.75,y+.1,-18.75),Vector3(-16.4,y+.1,-18.75)]
 	rooms.append({"name":"Kamenný ochoz za věží","rect":Rect2(17.35,-20.1,2.7,37.6)})
 	rooms.append({"name":"Severní hradby","rect":Rect2(-16.55,-20.1,36.5,2.7)})
 	rooms.append({"name":"Obranný ochoz","rect":Rect2(-17.5,-7.5,1.9,25)})
@@ -656,9 +720,11 @@ func build_tower() -> void:
 			window_wall(Vector3(12.5,y,-8),9,h,[0.0])
 			window_wall(Vector3(12.5,y,1),9,h,[0.0])
 	stone_floor(Vector3(12.5,0,-3.5),Vector2(9,9))
-	wall_piece(Vector3(11.5,1.55,-4.4),Vector3(6.6,3.1,.30),PI/2)
-	wall_piece(Vector3(11.5,1.55,.65),Vector3(.7,3.1,.30),PI/2)
-	wall_piece(Vector3(11.5,2.95,-.35),Vector3(1.3,.30,.30),PI/2)
+	wall_finish_override = "plaster"
+	for index in range(4):
+		var level: float = TOWER_LEVELS[index]
+		wall(Vector3(11.5,level,-3.5),8.4,GALLERY_Y if index==0 else FLOOR_STEP,[-3.15],["Pokoj věže · "+str(index)],PI/2)
+	wall_finish_override = ""
 	# The western bay stays open for the stairwell; the main ground-floor room is vaulted.
 	vaulted_ceiling(Vector3(14.15,0,-3.5),Vector2(5.05,8.4),true)
 	for floor in range(4):
@@ -666,7 +732,6 @@ func build_tower() -> void:
 		if floor>0:
 			stone_floor(Vector3(14.15,y,-3.5),Vector2(5.05,8.2))
 			stone_floor(Vector3(9.95,y,-.18),Vector2(3.46,1.9))
-			rail(Vector3(11.56,y,-7.75),Vector3(11.56,y,-.9))
 		if floor<3:
 			var next: float = TOWER_LEVELS[floor+1]
 			var half: float = (next-y)*.5
@@ -674,9 +739,8 @@ func build_tower() -> void:
 			var run := 4.32/(count-1)
 			flight(Vector3(9.12,y,-.9),Vector3.FORWARD,count,half/count,run,1.5,[-1])
 			floorboards(Vector3(9.93,y+half,-6.35),Vector2(3.40,2.82))
-			rail(Vector3(11.56,y+half,-7.76),Vector3(11.56,y+half,-5.22))
 			rail(Vector3(9.86,y+half,-5.22),Vector3(10.08,y+half,-5.22))
-			flight(Vector3(10.82,y+half,-5.22),Vector3.BACK,count,half/count,run,1.5)
+			flight(Vector3(10.82,y+half,-5.22),Vector3.BACK,count,half/count,run,1.5,[-1])
 			stair_routes.append({"start":Vector3(9.12,y+.08,-.2),"mid":Vector3(9.12,y+half+.1,-6.05),"turn":Vector3(10.82,y+half+.1,-6.05),"end":Vector3(10.82,next+.1,-.35),"exit":Vector3(14,next+.1,-.35)})
 	stone_floor(Vector3(16.55,GALLERY_Y,-3.5),Vector2(1.9,2.7))
 	# No railing against a solid wall at the eastern doorway.
@@ -721,7 +785,7 @@ func gate_wall(height: float) -> void:
 	# Clear wall areas beside both jambs are reserved for future torch sockets.
 
 func details() -> void:
-	for y in [0.0,GALLERY_Y]:
+	for y in [GALLERY_Y]:
 		box(Vector3(-4.6,y+1.9,-16.59),Vector3(5,2.65,.055),"plaster")
 		box(Vector3(4,y+1.9,-16.59),Vector3(3,2.65,.055),"plaster")
 	for pos in [Vector3(-11,2,-14),Vector3(0,2,-14),Vector3(11,2,-14),Vector3(14,5,-4),Vector3(14,9,-4),Vector3(14,12,-4),Vector3(13,2,9),Vector3(13,5.5,9)]:
