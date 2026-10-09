@@ -64,7 +64,6 @@ func setup_environment() -> void:
 	settings.sky = sky
 	settings.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	settings.ambient_light_energy = .48
-	settings.reflected_light_source = Environment.REFLECTED_SOURCE_SKY
 	settings.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	settings.fog_enabled = true
 	settings.fog_light_color = Color("bac3c1")
