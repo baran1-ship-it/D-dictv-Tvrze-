@@ -66,6 +66,12 @@ func build() -> void:
 		step(Vector3(-14.2+i*.42,1.8+(i+1)*.18,-2.35),Vector2(.45,1.8))
 	box(Vector3(-9.4,3.5,-3.65),Vector3(1.8,.2,2.5),"wood",true)
 	stair_routes.append({"start":Vector3(-15,.08,2.5),"mid":Vector3(-15,1.9,-2.35),"turn":Vector3(-14.6,1.9,-2.35),"end":Vector3(-9.8,3.7,-2.35),"exit":Vector3(-9.8,3.7,-6.3)})
+	for x in [-15.7,-14.3]:
+		beam(Vector3(x,.02,2.2),Vector3(x,1.65,-2.1),.17,"wood")
+	for z in [-3.1,-1.6]:
+		beam(Vector3(-14.4,1.65,z),Vector3(-10.1,3.45,z),.17,"wood")
+	for x in [-15.8,-14.2]:
+		box(Vector3(x,.8,-2.35),Vector3(.16,1.6,.16),"wood")
 	beam(Vector3(-16,1.1,2.3),Vector3(-16,2.9,-2.3),.1,"wood")
 	# The east residential wing joins the tower, not a separate house.
 	for y in [0.0,3.6]:
@@ -116,7 +122,7 @@ func textured(path: String, scale: float, tint: Color) -> StandardMaterial3D:
 	return mat
 
 func make_materials() -> void:
-	mats.stone = textured("res://assets/materials/stone.jpg",.38,Color.WHITE)
+	mats.stone = textured("res://assets/materials/stone.jpg",.38,Color("b8b2a5"))
 	mats.wood = textured("res://assets/materials/oak.jpg",.5,Color.WHITE)
 	mats.paving = textured("res://assets/materials/stone.jpg",.65,Color("a8a18d"))
 	mats.iron = plain(Color("373936"),.72,.65)
@@ -181,7 +187,6 @@ func beam(a: Vector3, b: Vector3, thickness: float, material_id: String) -> void
 
 func step(top: Vector3, footprint: Vector2) -> void:
 	box(top-Vector3(0,.1,0),Vector3(footprint.x,.2,footprint.y),"wood",true)
-	box(Vector3(top.x,top.y*.5-.1,top.z),Vector3(footprint.x,maxf(.02,top.y-.2),footprint.y),"wood",true)
 
 func wall(pos: Vector3, width: float, height: float, centers: Array, titles: Array, angle := 0.0) -> void:
 	var basis := Basis(Vector3.UP,angle)
@@ -236,6 +241,7 @@ func roof(pos: Vector3, size: Vector2, rise: float, along_x: bool) -> void:
 		surface.set_uv(Vector2(vertices[index].x,vertices[index].z))
 		surface.add_vertex(vertices[index]+pos)
 	surface.generate_normals()
+	surface.index()
 	batch(surface.commit(),Transform3D.IDENTITY,"roof")
 	var ends := SurfaceTool.new()
 	ends.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -243,6 +249,7 @@ func roof(pos: Vector3, size: Vector2, rise: float, along_x: bool) -> void:
 		ends.set_uv(Vector2(vertices[index].x,vertices[index].y))
 		ends.add_vertex(vertices[index]+pos)
 	ends.generate_normals()
+	ends.index()
 	batch(ends.commit(),Transform3D.IDENTITY,"stone")
 	if along_x:
 		beam(pos+Vector3(-w,rise,0),pos+Vector3(w,rise,0),.13,"roof")
