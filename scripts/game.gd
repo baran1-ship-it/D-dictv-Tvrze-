@@ -57,7 +57,8 @@ func setup_environment() -> void:
 	var sky := Sky.new()
 	var sky_mat := ProceduralSkyMaterial.new()
 	sky_mat.sky_top_color = Color("557eaa")
-	sky_mat.sky_horizon_color = Color("c7d2d7")
+	sky_mat.sky_horizon_color = Color("a6bdcc")
+	sky_mat.sky_curve = .12
 	sky_mat.ground_bottom_color = Color("5b6052")
 	sky_mat.ground_horizon_color = Color("c3c9c4")
 	sky.sky_material = sky_mat
@@ -198,12 +199,14 @@ func interact() -> void:
 	var door: Node3D = target_door
 	if door.busy:
 		return
+	if camera.global_position.distance_to(door.grasp_position(camera.global_position))>1.35:
+		announce("Přistup ještě blíž k madlu dveří.")
+		return
 	if door.opened and door.blocked_by(player.global_position):
 		announce("Ustup z průchodu, aby šly dveře zavřít.")
 		return
 	using_door = true
-	var grasp: Vector3 = door.handle.global_position
-	grasp += door.global_basis.z*(.18 if door.to_local(camera.global_position).z>=0 else -.18)
+	var grasp: Vector3 = door.grasp_position(camera.global_position)
 	var target := camera.to_local(grasp)
 	var rest := Vector3(.42,-.5,-.24)
 	hand.position = rest
@@ -260,7 +263,7 @@ func create_hand() -> void:
 	forearm = MeshInstance3D.new()
 	var sleeve := CylinderMesh.new()
 	sleeve.top_radius = .055
-	sleeve.bottom_radius = .09
+	sleeve.bottom_radius = .065
 	sleeve.height = .45
 	sleeve.radial_segments = 16
 	forearm.mesh = sleeve
@@ -269,7 +272,7 @@ func create_hand() -> void:
 
 func _process(_delta: float) -> void:
 	if is_instance_valid(hand) and hand.visible:
-		var elbow := Vector3(.32,-.43,-.32)
+		var elbow := Vector3(.30,-.48,-.48)
 		var wrist := hand.position+Vector3(0,0,.08)
 		var length := wrist.distance_to(elbow)
 		forearm.global_transform = camera.global_transform*Transform3D(Basis(Quaternion(Vector3.UP,(wrist-elbow).normalized())).scaled(Vector3(1,length/.45,1)),(wrist+elbow)*.5)

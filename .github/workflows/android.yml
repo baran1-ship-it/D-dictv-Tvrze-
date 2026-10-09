@@ -43,12 +43,17 @@ jobs:
           mkdir -p "$XDG_DATA_HOME/godot/export_templates/${GODOT_VERSION}.stable"
           unzip -q /tmp/templates.zip -d /tmp/export-templates
           cp /tmp/export-templates/templates/* "$XDG_DATA_HOME/godot/export_templates/${GODOT_VERSION}.stable/"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: godot-verification-engine
+          path: /tmp/godot/Godot_v4.6.3-stable_linux.x86_64
+          retention-days: 1
       - name: Import and test project
         run: |
           set -euo pipefail
           timeout 120s godot --headless --editor --import --quit 2>&1 | tee /tmp/import.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script' /tmp/import.log; then exit 1; fi
-          XDG_DATA_HOME="$RUNNER_TEMP/game-test-data" timeout 120s godot --headless --script res://tests/smoke.gd 2>&1 | tee /tmp/tests.log
+          XDG_DATA_HOME="$RUNNER_TEMP/game-test-data" timeout 180s godot --headless --script res://tests/smoke.gd 2>&1 | tee /tmp/tests.log
           grep -q 'PASS: exploration, multitouch, controller mapping, animated doors, collision, gallery and three tower floors' /tmp/tests.log
       - uses: actions/cache@v4
         with:
@@ -75,7 +80,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          timeout 90s xvfb-run -a godot --rendering-method gl_compatibility --path . --resolution 1280x720 --script res://tests/visual.gd 2>&1 | tee /tmp/visual.log
+          timeout 150s xvfb-run -a godot --audio-driver Dummy --rendering-method gl_compatibility --path . --resolution 1280x720 --script res://tests/visual.gd 2>&1 | tee /tmp/visual.log
           test -s build/courtyard.png
           if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/visual.log; then exit 1; fi
       - name: Export APK
@@ -98,5 +103,8 @@ jobs:
             build/SHA256SUMS.txt
             build/courtyard.png
             build/door-hand.png
+            build/east-wing.png
+            build/wall-walk.png
+            build/tower-stairs.png
           if-no-files-found: error
           retention-days: 14

@@ -1,26 +1,23 @@
-# Dědictví tvrze — procházka 0.2
+# Dědictví tvrze — procházka 0.3
 
-Offline Android prototyp pro průzkum české středověké tvrze z první osoby. Výtvarný směr vychází ze schválené realistické předlohy inspirované Suchdolem; současná scéna je původní model, nikoli kopie herních assetů KCD2. Grafika využívá nové obrazové materiály kamene a dubového dřeva, reliéf povrchů, sloučené statické modely, stíny a přirozenou oblohu. Kvalita ani výkon nebyly dosud potvrzeny na fyzickém tabletu.
+Offline Android procházka původní českou tvrzí z první osoby. Podoba navazuje na schválený realistický návrh inspirovaný Suchdolem a KCD2; nepoužívá assety této hry. Kvalita obrázkového konceptu není zárukou stejné kvality běžící scény.
 
-## První procházková verze
+## Přestavba
 
-- Propojený severní palác s kovárnou, kuchyní a hodovní síní; pavlač a obytné východní křídlo.
-- Věž: přízemí a tři patra, vnitřní dvojramenné schodiště s podestami.
-- Jediná interakce: 17 dveří s kováním. Ruka dosáhne na madlo, dveře se otevřou nebo zavřou. Zavření se odmítne, stojí-li hráč přímo v průchodu.
-- Bez luku, terčů, bodování, vylepšování a ukládání spánkem. Nábytek je pouze součást prostředí.
+Propojený palác a obytné křídlo, věž s přízemím a třemi patry. Kompaktní kryté U schodiště u pavlače, schody ve věži u zdi, obranný ochoz podél volných západních a jižních hradeb včetně průchodu nad bránou, přístup z paláce a nádvoří. Horní dveře obytného křídla do prázdna jsou nahrazené oknem.
+
+Kameny, dlažba a překrývající se tašky mají skutečný prostorový reliéf. Dlažba má pod viditelnými kostkami plynulou kolizní plochu. Prkna, trámy, stupně, nosníky, zábradlí a podpěry jsou samostatné díly se směrem vláken podél dřeva a čely s letokruhy. Zdivo má zapuštěné spáry, okna mají skutečné otvory s ostěním, příčkami a okenicemi. Část interiérů má vápennou omítku. Povrchy využívají vlastní generované obrazové materiály.
 
 ## Ovládání
 
-Tablet: levý viditelný joystick ovládá chůzi, tažení vpravo rozhled, tlačítko DVEŘE interakci, horní tlačítko pauzu. Současný pohyb, rozhled a interakce mají oddělené dotyky.
+Dotyk: levý joystick chůze, tažení vpravo rozhled, DVEŘE interakce, horní tlačítko pauza. Xbox: levá páčka chůze, pravá rozhled, A dveře, Menu pauza, A/B návrat. PC: WASD, myš, E, Esc.
 
-Xbox ovladač: levá páčka chůze, pravá rozhled, A dveře, Menu pauza, A/B návrat z pauzy. Podpora využívá standardní mapování Godotu a Androidu; skutečné Bluetooth/USB spojení je třeba ověřit na zařízení. Ovládání se přepne na dotyk při použití obrazovky. Odpojení ovladače zastaví pohyb.
+Jedinou interakcí jsou dveře. Madla a upevňovací destičky jsou na obou stranách dveřního křídla. Pro dosažení rukou je nutné přistoupit blízko. Zavření je blokováno, stojí-li hráč v průchodu. Střelnice, bodování ani jiné akce nejsou aktivní.
 
-PC: WASD, myš, E nebo levé tlačítko, Esc pauza.
+## Sestavení a testy
 
-## Sestavení a ověření
+Godot 4.6.3 Compatibility, Android ID `cz.dedictvitvrze.prochazka`, verze 0.3.0. APK aktualizuje procházku 0.2 a ponechává původní střelecký prototyp zvlášť. Podepisovací debug klíč používá cache Actions; nejde o distribuční klíč pro obchod.
 
-Godot 4.6.3, renderer Compatibility. GitHub Actions importuje scénu, testuje skutečné kolize, schody a animované dveře, prověřuje dotyky a mapování tlačítek, vytváří dvě kontrolní fotografie běžící scény a ověřuje podpis APK. Výstup je `dedictvi-tvrze-prochazka`.
+Actions importuje projekt, ověří dotyky, tlačítka ovladače, animaci ruky, dveře a kolize, výstup po všech schodištích, průchod po ochozu přes bránu a podporu podlahy na obou stranách každých dveří. Kontrolní snímky pokrývají nádvoří, východní střechy, ochoz, věžové schody a dveře. Skutečná Bluetooth/USB kompatibilita Xboxu a výkon na tabletu vyžadují uživatelskou zkoušku.
 
-Procházka používá samostatné ID `cz.dedictvitvrze.prochazka`, aby první novou verzi bylo možné instalovat vedle původního prototypu. Debug podpisový klíč pro následující sestavení se uchovává v cache Actions. Jde o testovací podpis, nikoli distribuční klíč pro obchod.
-
-Obrazové materiály vznikly generováním obrázků pro tento projekt. Kód vlastní scény a ovládání je v `scripts/fortress_builder.gd`, `fortress_door.gd`, `exploration_controls.gd` a `game.gd`. Staré skripty pro ukládání a streaming nejsou v procházkové scéně aktivní.
+Opakované kameny a tašky používají MultiMesh; ostatní statické díly jsou sloučené podle materiálu. Jemné detaily mají mipmapy a normal mapy. Výkon nelze odvozovat pouze z obrázku konceptu.

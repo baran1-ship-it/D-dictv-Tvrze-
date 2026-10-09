@@ -18,19 +18,21 @@ func configure(wood: Material, iron: Material, door_title: String) -> void:
 	body = StaticBody3D.new()
 	body.set_meta("door", self)
 	pivot.add_child(body)
-	var panel := MeshInstance3D.new()
-	var panel_mesh := BoxMesh.new()
-	panel_mesh.size = Vector3(width, height, 0.13)
-	panel.mesh = panel_mesh
-	panel.material_override = wood
-	panel.position = Vector3(width / 2, height / 2, 0)
-	body.add_child(panel)
-	collider = CollisionShape3D.new()
 	var shape := BoxShape3D.new()
-	shape.size = panel_mesh.size
+	shape.size = Vector3(width,height,.13)
+	collider = CollisionShape3D.new()
 	collider.shape = shape
-	collider.position = panel.position
+	collider.position = Vector3(width/2,height/2,0)
 	body.add_child(collider)
+	var wood_batch := SurfaceTool.new()
+	wood_batch.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in range(9):
+		var board := preload("res://scripts/construction_mesh.gd").block(Vector3(width/9-.004,height,.13),.008,true)
+		wood_batch.append_from(board,0,Transform3D(Basis.IDENTITY,Vector3((i+.5)*width/9,height/2,0)))
+	var panel := MeshInstance3D.new()
+	panel.mesh = wood_batch.commit()
+	panel.material_override = wood
+	body.add_child(panel)
 	for y in [0.5, 2.0]:
 		var strap := MeshInstance3D.new()
 		var strap_mesh := BoxMesh.new()
@@ -49,7 +51,7 @@ func configure(wood: Material, iron: Material, door_title: String) -> void:
 			rivet.position = Vector3(x, y, 0.095)
 			body.add_child(rivet)
 	handle = Node3D.new()
-	handle.position = Vector3(width - 0.25, 1.05, 0.12)
+	handle.position = Vector3(width - 0.45, 1.10, 0.0)
 	body.add_child(handle)
 	for side in [-1, 1]:
 		var ring := MeshInstance3D.new()
@@ -61,7 +63,22 @@ func configure(wood: Material, iron: Material, door_title: String) -> void:
 		ring.mesh = torus
 		ring.material_override = iron
 		ring.rotation.x = PI / 2
-		ring.position.z = side * 0.12
+		ring.position.z = side * 0.095
+		var plate := MeshInstance3D.new()
+		var plate_mesh := BoxMesh.new()
+		plate_mesh.size = Vector3(.15,.20,.02)
+		plate.mesh = plate_mesh
+		plate.material_override = iron
+		plate.position = Vector3(0,.065,side*.074)
+		handle.add_child(plate)
+		var stem := MeshInstance3D.new()
+		var stem_mesh := SphereMesh.new()
+		stem_mesh.radius = .035
+		stem_mesh.height = .07
+		stem.mesh = stem_mesh
+		stem.material_override = iron
+		stem.position = Vector3(0,.07,side*.091)
+		handle.add_child(stem)
 		handle.add_child(ring)
 
 func blocked_by(player_position: Vector3) -> bool:
@@ -83,3 +100,7 @@ func toggle(player_position: Vector3) -> bool:
 		collider.set_deferred("disabled", false)
 		busy = false)
 	return true
+
+func grasp_position(player_position: Vector3) -> Vector3:
+	var side := 1.0 if to_local(player_position).z>=0 else -1.0
+	return handle.to_global(Vector3(0,0,side*.11))
