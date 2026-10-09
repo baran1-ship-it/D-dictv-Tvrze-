@@ -20,18 +20,21 @@ func run() -> void:
 	game.hint.text = ""
 	await shot("courtyard.png",Vector3(-2,.1,14.8),-.22,.28)
 	await shot("east-wing.png",Vector3(-3,.1,8),-1.25,.20)
-	await shot("wall-walk.png",Vector3(-16.5,3.7,8),3.25,-.06)
-	await shot("rear-walk.png",Vector3(18.75,3.7,9),0,.08)
+	await shot("wall-walk.png",Vector3(-16.5,5.1,8),3.25,-.06)
+	await shot("rear-walk.png",Vector3(18.75,5.1,9),0,.08)
 	await shot("stairs-west.png",Vector3(-2.5,.1,2),.95,.22)
 	await shot("stairs-tower.png",Vector3(1,.1,9),-.65,.28)
-	await shot("gallery-join.png",Vector3(-14.7,3.7,-6.4),1.57,-.03)
-	await shot("landing.png",Vector3(-14.7,3.7,-4.1),0,-.35)
+	await shot("gallery-join.png",Vector3(-14.7,5.1,-6.4),1.57,-.03)
+	await shot("landing.png",Vector3(-14.7,5.1,-4.1),0,-.35)
 	await shot("stairs-gate.png",Vector3(-7,.1,8),1.8,.32)
-	await shot("gallery-bearers.png",Vector3(-12,.1,12),1.57,.45)
+	await shot("gallery-bearers.png",Vector3(6,.1,12),3.14,.68)
+	await shot("vault-palace.png",Vector3(-11,.1,-11),0,.82)
+	await shot("vault-east.png",Vector3(12,.1,10),.4,.9)
+	await shot("double-gate.png",Vector3(0,.1,12),PI,.28)
 	var south = game.world.doors.filter(func(d): return d.title=="Přístup na hradby")[0]
-	south.toggle(Vector3(14.5,3.7,14.1))
+	south.toggle(Vector3(14.5,5.1,14.1))
 	await create_timer(.8).timeout
-	await shot("door-swing.png",Vector3(15.6,3.7,14.1),-.3,0)
+	await shot("door-swing.png",Vector3(15.6,5.1,14.1),-.3,0)
 
 	print("GEOMETRY: masonry/paving mesh cells=",game.world.relief_cells," individual shingles=",game.world.roof_cells," closed stones=",game.world.stone_count," draw calls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	game.queue_free()

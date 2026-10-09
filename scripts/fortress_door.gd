@@ -1,5 +1,6 @@
 extends Node3D
 
+var partner: Node3D
 var pivot: Node3D
 var body: StaticBody3D
 var collider: CollisionShape3D
@@ -34,15 +35,15 @@ func configure(wood: Material, iron: Material, door_title: String) -> void:
 	panel.mesh = wood_batch.commit()
 	panel.material_override = wood
 	body.add_child(panel)
-	for y in [0.5, 2.0]:
+	for y in [height*.19, height*.76]:
 		var strap := MeshInstance3D.new()
 		var strap_mesh := BoxMesh.new()
-		strap_mesh.size = Vector3(1.8, 0.07, 0.17)
+		strap_mesh.size = Vector3(width*.86, 0.07, 0.17)
 		strap.mesh = strap_mesh
 		strap.material_override = iron
 		strap.position = Vector3(width / 2, y, 0)
 		body.add_child(strap)
-		for x in [0.13, 0.5, 1.75]:
+		for x in [width*.06, width*.24, width*.83]:
 			var rivet := MeshInstance3D.new()
 			var sphere := SphereMesh.new()
 			sphere.radius = 0.035
@@ -87,10 +88,13 @@ func blocked_by(player_position: Vector3) -> bool:
 	return absf(p.x) < width / 2 + 0.4 and absf(p.z) < 0.65 and p.y > -1.8 and p.y < height
 
 func toggle(player_position: Vector3) -> bool:
-	if busy:
-		return false
-	if opened and blocked_by(player_position):
-		return false
+	if busy or (is_instance_valid(partner) and partner.busy): return false
+	if opened and (blocked_by(player_position) or (is_instance_valid(partner) and partner.blocked_by(player_position))): return false
+	_toggle_single(player_position)
+	if is_instance_valid(partner): partner._toggle_single(player_position)
+	return true
+
+func _toggle_single(player_position: Vector3) -> void:
 	busy = true
 	var side := opening_side if opening_side!=0 else (1.0 if to_local(player_position).z >= 0 else -1.0)
 	opened = not opened
@@ -100,7 +104,6 @@ func toggle(player_position: Vector3) -> bool:
 	tween.tween_callback(func():
 		collider.set_deferred("disabled", false)
 		busy = false)
-	return true
 
 func grasp_position(player_position: Vector3) -> Vector3:
 	var side := 1.0 if body.to_local(player_position).z>=0 else -1.0

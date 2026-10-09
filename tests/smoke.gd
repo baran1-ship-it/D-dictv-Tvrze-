@@ -38,7 +38,7 @@ func run() -> void:
 	root.add_child(game)
 	for frame in range(10):
 		await physics_frame
-	check(game.world.doors.size()==19,"19 usable doors should be present")
+	check(game.world.doors.size()==20,"18 doors and two gate leaves should be present")
 	check(game.world.stair_routes.size()==6,"three straight external stairs and three tower flights should exist")
 	check(not game.has_method("release_arrow"),"archery must be absent")
 	var c = game.controls
@@ -82,7 +82,7 @@ func run() -> void:
 	game.interact()
 	check(game.using_door and game.hand.visible,"using a door should reach with a visible hand")
 	await create_timer(1.2).timeout
-	var door = game.world.doors[1]
+	var door = game.world.doors.filter(func(d): return d.title=="Kovárna")[0]
 	check(door.opened and not door.busy,"door opening animation should finish")
 	check(not game.hand.visible and not game.using_door,"hand should retract after opening")
 	check(await walk_to(Vector3(-8.8,.1,-9.5)),"open doorway should be traversable")
@@ -102,13 +102,13 @@ func run() -> void:
 	for w in game.world.windows:
 		check(absf(w.x-17)>.01 and absf(w.z+17)>.01,"windows facing the inaccessible inner perimeter must be removed")
 	# Sample the corrected wall-side seams, using visible floor footprints as well as collision rays.
-	for pos in [Vector3(-17.35,3.6,-6.5),Vector3(-14.7,3.6,-4.1),Vector3(6.85,3.6,-4.8),Vector3(8.4,3.6,.6),Vector3(9.2,1.8,-7.6),Vector3(9.2,5.4,-7.6),Vector3(9.2,9,-7.6)]:
+	for pos in [Vector3(-17.35,5.0,-6.5),Vector3(-14.7,5.0,-4.1),Vector3(6.85,5.0,-4.8),Vector3(8.4,5.0,.6),Vector3(9.2,2.5,-7.6),Vector3(9.2,6.63,-7.6),Vector3(9.2,9.89,-7.6)]:
 		var supported := false
 		for f in game.world.floor_patches:
 			if absf(f.pos.y-pos.y)<.02 and Rect2(Vector2(f.pos.x,f.pos.z)-f.size*.5,f.size).has_point(Vector2(pos.x,pos.z)): supported = true
 		check(supported,"visible landing must reach the wall at "+str(pos))
 	# Guard the enlarged tower turning platforms on their exposed side.
-	for y in [1.8,5.4,9.0]:
+	for y in [2.5,6.63,9.89]:
 		var query := PhysicsRayQueryParameters3D.create(Vector3(11.3,y+.6,-6.3),Vector3(12.0,y+.6,-6.3))
 		query.exclude = [game.player.get_rid()]
 		check(not game.get_world_3d().direct_space_state.intersect_ray(query).is_empty(),"tower turning landing needs an effective guard")
@@ -117,6 +117,19 @@ func run() -> void:
 	for d in game.world.doors:
 		check(not (d.title=="Obytné křídlo" and d.position.y>1),"upper yard door must be replaced by a window")
 		check(absf(d.handle.position.z)<.001,"handle roots must lie on door plane")
+	# Test the actual vault crown, first-floor slab and 3 m clear tower storeys.
+	check(game.world.vaults.size()==5,"all main ground-floor rooms must have stone vaults")
+	for v in game.world.vaults:
+		var offset := Vector3(.07,0,.07)
+		var query := PhysicsRayQueryParameters3D.create(v.center+offset+Vector3.UP*4.0,v.center+offset+Vector3.UP*4.8)
+		query.exclude = [game.player.get_rid()]
+		var hit := game.get_world_3d().direct_space_state.intersect_ray(query)
+		check(not hit.is_empty() and absf(hit.get("position",Vector3.ZERO).y-4.5)<.04,"vault crown must be 4.5 m above the ground floor")
+	for level in [5.0,8.26]:
+		var query := PhysicsRayQueryParameters3D.create(Vector3(14,level+1,-3.5),Vector3(14,level+3.5,-3.5))
+		query.exclude = [game.player.get_rid()]
+		var hit := game.get_world_3d().direct_space_state.intersect_ray(query)
+		check(not hit.is_empty() and absf(hit.get("position",Vector3.ZERO).y-level-3.0)<.03,"tower storey must have 3 m clear height")
 	# Verify the actual capsule climbs each staircase, not just geometric markers.
 	for route in game.world.stair_routes:
 		game.player.position = route.start
@@ -142,10 +155,10 @@ func run() -> void:
 		if not passed:
 			print("Wall failure: player=",game.player.position," target=",point)
 		check(passed,"wall walk must connect through courtyard corners and across gate")
-	game.player.position = Vector3(-14.7,3.7,-6.4)
+	game.player.position = Vector3(-14.7,5.1,-6.4)
 	game.player.velocity = Vector3.ZERO
 	for frame in range(8): await physics_frame
-	for point in [Vector3(-16.6,3.7,-6.4),Vector3(-16.6,3.7,-4),Vector3(-16.6,3.7,0),Vector3(-16.6,3.7,-6.4),Vector3(-14.7,3.7,-6.4)]:
+	for point in [Vector3(-16.6,5.1,-6.4),Vector3(-16.6,5.1,-4),Vector3(-16.6,5.1,0),Vector3(-16.6,5.1,-6.4),Vector3(-14.7,5.1,-6.4)]:
 		check(await walk_to(point),"palace gallery and wall walk must join at one level")
 	# Walk through the complete upper doorway, including its outer railing gap.
 	for d in game.world.doors:
@@ -184,6 +197,25 @@ func run() -> void:
 				var query := PhysicsRayQueryParameters3D.create(pos+Vector3(0,.15,0),pos-Vector3(0,.65,0))
 				query.exclude = [game.player.get_rid()]
 				check(not game.get_world_3d().direct_space_state.intersect_ray(query).is_empty(),"door must have a floor on both sides: "+d.title)
+	# Probe off-centre approaches and reverse turns where the user became trapped.
+	for points in [
+		[Vector3(-16.4,5.1,-4.25),Vector3(-15.4,5.1,-4.15),Vector3(-14.7,5.1,-3.7),Vector3(-14.1,5.1,-5.5),Vector3(-16.4,5.1,-4.25)],
+		[Vector3(-16.4,5.1,15.3),Vector3(-14.5,5.1,15.0),Vector3(-14.5,5.1,13.9),Vector3(-14.5,5.1,15.0),Vector3(-16.4,5.1,15.3)]]:
+		game.player.position = points[0]
+		game.player.velocity = Vector3.ZERO
+		for frame in range(8): await physics_frame
+		for point in points.slice(1): check(await walk_to(point),"stair corner must allow off-centre movement and return")
+	var gate = game.world.doors.filter(func(d): return d.title=="Vstupní brána")[0]
+	game.player.position = Vector3(0,.1,16.4)
+	game.player.velocity = Vector3.ZERO
+	check(gate.toggle(game.player.position),"double gate must open as a pair")
+	await create_timer(.8).timeout
+	check(gate.opened and gate.partner.opened,"both gate leaves must finish opening")
+	check(await walk_to(Vector3(0,.1,19.4)),"open double gate must be traversable")
+	check(await walk_to(Vector3(0,.1,16.4)),"open double gate must allow return")
+	check(gate.toggle(game.player.position),"double gate must close as a pair")
+	await create_timer(.8).timeout
+	check(not gate.opened and not gate.partner.opened,"both gate leaves must finish closing")
 	game.controls.reset_touches()
 	game.queue_free()
 	await process_frame

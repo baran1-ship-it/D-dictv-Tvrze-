@@ -1,4 +1,11 @@
 extends Node3D
+const Vault = preload("res://scripts/vault_mesh.gd")
+const GALLERY_Y := 5.0
+const UPPER_CLEAR := 3.0
+const FLOOR_STEP := 3.26
+const TOWER_LEVELS := [0.0,5.0,8.26,11.52]
+var vaults: Array = []
+var rail_posts: Dictionary = {}
 const Door = preload("res://scripts/fortress_door.gd")
 const Construction = preload("res://scripts/construction_mesh.gd")
 const Masonry = preload("res://scripts/masonry_mesh.gd")
@@ -45,53 +52,47 @@ func build() -> void:
 			foliage.rings = 6
 			batch(foliage,Transform3D(Basis.IDENTITY,pos+Vector3(sin(j*2.4)*.7,4.5+j*.9,cos(j*2.4)*.7)),"leaves")
 	use_solid_masonry = true
+	var curtain_top := GALLERY_Y+1.1
 	for x in [-18.0,20.5]:
-		wall_piece(Vector3(x,2.35,-1.25),Vector3(38.5,4.7,.85),PI/2)
-	wall_piece(Vector3(1.25,2.35,-20.5),Vector3(38.5,4.7,.85))
-	wall(Vector3(1.25,0,18),38.5,4.7,[-1.25],["Vstupní brána"])
+		wall_piece(Vector3(x,curtain_top*.5,-1.25),Vector3(38.5,curtain_top,.85),PI/2)
+	wall_piece(Vector3(1.25,curtain_top*.5,-20.5),Vector3(38.5,curtain_top,.85))
+	gate_wall(curtain_top)
 	for i in range(20):
 		var p := -17.0+i*1.9
-		for z in [-20.5,18.0]:
-			wall_piece(Vector3(p,5.2,z),Vector3(.95,1,1))
+		for z in [-20.5,18.0]: wall_piece(Vector3(p,curtain_top+.5,z),Vector3(.95,1,1))
 		var q := -19.5+i*1.9
-		for x in [-18.0,20.5]:
-			wall_piece(Vector3(x,5.2,q),Vector3(1,1,.95))
+		for x in [-18.0,20.5]: wall_piece(Vector3(x,curtain_top+.5,q),Vector3(1,1,.95))
 	use_solid_masonry = false
-	# A connected palace with real floorboards and masonry openings.
-	floorboards(Vector3(0,0,-12.5),Vector2(34,9))
-	for y in [3.6,7.2]:
-		floorboards(Vector3(0,y,-12.5),Vector2(34,9))
-	for y in [0.0,3.6]:
-		wall(Vector3(0,y,-8),34,3.6,[-8.8,0.0,6.8,14.5] if y==0 else [-15.4,-8.8,0.0,6.8,14.5],["Kovárna","Kuchyň","Hodovní síň","Průchod do věže"] if y==0 else ["Obranný ochoz","Komnata","Palácová komnata","Hodovní síň","Průchod do věže"])
-		for x in [-5.65,5.65]:
-			wall(Vector3(x,y,-12.5),9,3.6,[0.0],["Spojovací dveře"],PI/2)
-		wall_piece(Vector3(0,y+1.8,-17),Vector3(34,3.6,.6))
-	for x in [-17.0,17.0]:
-		wall_piece(Vector3(x,3.6,-12.5),Vector3(9,7.2,.6),PI/2)
+	stone_floor(Vector3(0,0,-12.5),Vector2(34,9))
+	stone_floor(Vector3(0,GALLERY_Y,-12.5),Vector2(34,9))
+	floorboards(Vector3(0,GALLERY_Y+UPPER_CLEAR+.09,-12.5),Vector2(34,9))
+	for y in [0.0,GALLERY_Y]:
+		var h: float = GALLERY_Y if y==0 else UPPER_CLEAR+.15
+		wall(Vector3(0,y,-8),34,h,[-8.8,0.0,6.8,14.5] if y==0 else [-15.4,-8.8,0.0,6.8,14.5],["Kovárna","Kuchyň","Hodovní síň","Průchod do věže"] if y==0 else ["Obranný ochoz","Komnata","Palácová komnata","Hodovní síň","Průchod do věže"])
+		for x in [-5.65,5.65]: wall(Vector3(x,y,-12.5),9,h,[0.0],["Spojovací dveře"],PI/2)
+		wall_piece(Vector3(0,y+h*.5,-17),Vector3(34,h,.6))
+	for x in [-17.0,17.0]: wall_piece(Vector3(x,4.075,-12.5),Vector3(9,8.15,.6),PI/2)
+	for x in [-11.325,0.0,11.325]: vaulted_ceiling(Vector3(x,0,-12.5),Vector2(10.7,8.4))
 	rooms = [{"name":"Kovárna","rect":Rect2(-17,-17,11.35,9)},{"name":"Kuchyň","rect":Rect2(-5.65,-17,11.3,9)},{"name":"Hodovní síň","rect":Rect2(5.65,-17,11.35,9)}]
-	roof(Vector3(0,7.25,-12.5),Vector2(35,10),3,true)
+	roof(Vector3(0,8.15,-12.5),Vector2(35,10),3,true)
 	for x in [-12.0,.5]:
-		wall_piece(Vector3(x,9,-14),Vector3(.8,3.3,.8))
-		box(Vector3(x,10.75,-14),Vector3(1,.25,1),"trim")
+		wall_piece(Vector3(x,9.9,-14),Vector3(.8,3.3,.8))
+		box(Vector3(x,11.65,-14),Vector3(1,.25,1),"trim")
 	gallery()
-	# East upper courtyard opening is a window, never a door into empty air.
-	for y in [0.0,3.6]:
-		floorboards(Vector3(12.5,y,8),Vector2(9,14))
-		if y==0:
-			wall(Vector3(8,y,8),14,3.6,[0.0],["Obytné křídlo"],PI/2)
-		else:
-			window_wall(Vector3(8,y,8),14,3.6,[0.0],PI/2)
-		wall(Vector3(12.5,y,1),9,3.6,[2.0],["Dveře do věže"])
-		wall_piece(Vector3(17,y+1.8,8),Vector3(14,3.6,.6),PI/2)
-		if y==0:
-			window_wall(Vector3(12.5,y,15),9,3.6,[0.0])
-		else:
-			wall(Vector3(12.5,3.6,15),9,3.6,[2.0],["Přístup na hradby"])
-	floorboards(Vector3(12.5,7.2,8),Vector2(9,14))
-	roof(Vector3(12.5,7.25,8),Vector2(10,15),3,false)
-	floorboards(Vector3(14.5,3.6,15.25),Vector2(2.7,2.1))
-	for x in [13.15,15.85]:
-		rail(Vector3(x,3.6,14.65),Vector3(x,3.6,15.7))
+	for y in [0.0,GALLERY_Y]:
+		var h: float = GALLERY_Y if y==0 else UPPER_CLEAR+.15
+		stone_floor(Vector3(12.5,y,8),Vector2(9,14))
+		if y==0: wall(Vector3(8,y,8),14,h,[0.0],["Obytné křídlo"],PI/2)
+		else: window_wall(Vector3(8,y,8),14,h,[0.0],PI/2)
+		wall(Vector3(12.5,y,1),9,h,[2.0],["Dveře do věže"])
+		wall_piece(Vector3(17,y+h*.5,8),Vector3(14,h,.6),PI/2)
+		if y==0: window_wall(Vector3(12.5,y,15),9,h,[0.0])
+		else: wall(Vector3(12.5,y,15),9,h,[2.0],["Přístup na hradby"])
+	vaulted_ceiling(Vector3(12.5,0,8),Vector2(8.4,13.4),true)
+	floorboards(Vector3(12.5,8.09,8),Vector2(9,14))
+	roof(Vector3(12.5,8.15,8),Vector2(10,15),3,false)
+	floorboards(Vector3(14.5,GALLERY_Y,15.25),Vector2(2.7,2.1))
+	for x in [13.15,15.85]: rail(Vector3(x,GALLERY_Y,14.65),Vector3(x,GALLERY_Y,15.65))
 	rooms.append({"name":"Obytné křídlo","rect":Rect2(8,1,9,14)})
 	build_tower()
 	defensive_walk()
@@ -198,6 +199,9 @@ func make_materials() -> void:
 	mats.rubble_edge.uv1_world_triplanar = true
 	mats.rubble_edge.uv1_scale = Vector3.ONE*.5
 	mats.mortar = plain(Color("756e60"))
+	mats.vault_stone = mats.trim.duplicate()
+	mats.vault_stone.vertex_color_use_as_albedo = true
+	mats.vault_stone.albedo_color = Color("c8c1ac")
 	mats.palace_rock = mats.rock3d.duplicate()
 	mats.palace_rock.albedo_color = Color("c5ae8e")
 	mats.tower_rock = mats.rock3d.duplicate()
@@ -268,14 +272,14 @@ func box(pos: Vector3, size: Vector3, material_id: String, solid := false) -> vo
 	if solid:
 		collision(Transform3D(Basis.IDENTITY,pos),size)
 
-func timber(pos: Vector3, size: Vector3, solid := false, material_id := "beam", along := Vector3.UP) -> void:
+func timber(pos: Vector3, size: Vector3, solid := false, material_id := "beam", along := Vector3.UP, show_ends := true) -> void:
 	var basis := Basis(Quaternion(Vector3.UP,along.normalized()))
 	var variant := int(absf(pos.x*7+pos.z*11+pos.y*3))%5
 	var key := str(size)+"/timber/"+str(variant)
 	if not mesh_cache.has(key):
 		mesh_cache[key] = Construction.block(size,.012,true,Vector2(variant*.17,variant*.13))
 	batch(mesh_cache[key],Transform3D(basis,pos),material_id)
-	if material_id in ["wood","beam","door"]:
+	if show_ends and material_id in ["wood","beam","door"]:
 		var cap_key := key+"/ends"
 		if not mesh_cache.has(cap_key):
 			var cap := SurfaceTool.new()
@@ -291,8 +295,8 @@ func timber(pos: Vector3, size: Vector3, solid := false, material_id := "beam", 
 	if solid:
 		collision(Transform3D(basis,pos),size)
 
-func beam(a: Vector3, b: Vector3, thickness: float, material_id := "beam", solid := false) -> void:
-	timber((a+b)*.5,Vector3(thickness,a.distance_to(b),thickness),solid,material_id,b-a)
+func beam(a: Vector3, b: Vector3, thickness: float, material_id := "beam", solid := false, show_ends := true) -> void:
+	timber((a+b)*.5,Vector3(thickness,a.distance_to(b),thickness),solid,material_id,b-a,show_ends)
 
 func cylinder(pos: Vector3, top: float, bottom: float, height: float, material_id: String, sides := 12) -> void:
 	var mesh := CylinderMesh.new()
@@ -303,7 +307,14 @@ func cylinder(pos: Vector3, top: float, bottom: float, height: float, material_i
 	mesh.rings = 1
 	batch(mesh,Transform3D(Basis.IDENTITY,pos),material_id)
 
-func floorboards(pos: Vector3, size: Vector2) -> void:
+func floorboards(pos: Vector3, size: Vector2, across_x := false) -> void:
+	if across_x:
+		floor_patches.append({"pos":pos,"size":size})
+		collision(Transform3D(Basis.IDENTITY,pos-Vector3(0,.07,0)),Vector3(size.x,.14,size.y))
+		var count_x := int(ceil(size.y/.3))
+		for i in range(count_x):
+			timber(pos+Vector3(0,-.045,-size.y*.5+(i+.5)*size.y/count_x),Vector3(size.y/count_x-.009,size.x-.012,.09),false,"wood",Vector3.RIGHT)
+		return
 	floor_patches.append({"pos":pos,"size":size})
 	collision(Transform3D(Basis.IDENTITY,pos-Vector3(0,.07,0)),Vector3(size.x,.14,size.y))
 	var count := int(ceil(size.x/.3))
@@ -374,7 +385,7 @@ func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 		[Vector3(-x,-y,-z),Vector3.BACK,Vector3.UP,Vector3.LEFT,Vector2(size.z,size.y)],
 		[Vector3(-x,y,-z),Vector3.RIGHT,Vector3.BACK,Vector3.UP,Vector2(size.x,size.z)]]
 	for i in range(faces.size()):
-		if not use_solid_masonry and i>=2: continue
+		# Closed return faces prevent exposed grey strips at building corners.
 		var f: Array = faces[i]
 		var origin: Vector3 = pos+basis*f[0]
 		var stone := Masonry.face(origin,basis*f[1],basis*f[2],basis*f[3],f[4],int(absf(pos.x*131+pos.z*193+pos.y*557))+i*47+1403,style)
@@ -528,21 +539,28 @@ func gable(points: Array, normal: Vector3) -> void:
 func rail(a: Vector3, b: Vector3, opening := false) -> void:
 	if a.distance_to(b)<.01: return
 	rail_routes.append({"a":a,"b":b})
-	var count := int(ceil(a.distance_to(b)/.32))
-	beam(a+Vector3(0,1.02,0),b+Vector3(0,1.02,0),.10,"beam",true)
-	beam(a+Vector3(0,.18,0),b+Vector3(0,.18,0),.08)
+	var count := maxi(1,int(ceil(a.distance_to(b)/.32)))
+	var direction := (b-a).normalized()
+	# Handrails slightly overlap at shared corners; posts terminate inside the rail.
+	beam(a+Vector3(0,1.02,0)-direction*.07,b+Vector3(0,1.02,0)+direction*.07,.14,"beam",false,false)
+	beam(a+Vector3(0,.18,0),b+Vector3(0,.18,0),.09,"beam",false,false)
 	for i in range(count+1):
 		var p := a.lerp(b,float(i)/count)
-		beam(p,p+Vector3(0,1.02,0),.055 if i%6 else .12)
-	# Short vertical guard panels follow the slope at tread height.
-	var direction := (b-a).normalized()
+		var key := str(p.snapped(Vector3.ONE*.005))
+		if rail_posts.has(key): continue
+		rail_posts[key] = true
+		beam(p-Vector3.UP*.04,p+Vector3.UP*1.00,.14 if i==0 or i==count or i%6==0 else .065,"beam",false,false)
+	# A continuous guard box has no overlapping panel corners to catch the capsule.
 	var flat := Vector3(direction.x,0,direction.z).normalized()
 	var basis := Basis(flat,Vector3.UP,flat.cross(Vector3.UP))
-	for i in range(count):
-		var p := a.lerp(b,(i+.5)/count)+Vector3(0,.52,0)
-		collision(Transform3D(basis,p),Vector3(Vector2(b.x-a.x,b.z-a.z).length()/count+.015,1.04,.09))
+	if absf(a.y-b.y)<.01:
+		collision(Transform3D(basis,(a+b)*.5+Vector3.UP*.52),Vector3(Vector2(b.x-a.x,b.z-a.z).length(),1.04,.10))
+	else:
+		for i in range(count):
+			var p := a.lerp(b,(i+.5)/count)+Vector3.UP*.52
+			collision(Transform3D(basis,p),Vector3(Vector2(b.x-a.x,b.z-a.z).length()/count,1.04,.10))
 
-func flight(first: Vector3, direction: Vector3, count: int, rise: float, run: float, width: float) -> Vector3:
+func flight(first: Vector3, direction: Vector3, count: int, rise: float, run: float, width: float, guard_sides: Array = [-1,1]) -> Vector3:
 	var across := Vector3(direction.z,0,-direction.x)
 	for i in range(count):
 		var top := first+direction*(i*run)+Vector3(0,(i+1)*rise,0)
@@ -558,119 +576,151 @@ func flight(first: Vector3, direction: Vector3, count: int, rise: float, run: fl
 	var last := first+direction*((count-1)*run)+Vector3(0,count*rise,0)
 	for side in [-1,1]:
 		beam(first+across*side*(width/2-.10)-Vector3(0,.12,0),last+across*side*(width/2-.10)-Vector3(0,.16,0),.15)
+		if side not in guard_sides: continue
 		rail(first+across*side*(width/2-.01)+Vector3(0,rise,0),last+across*side*(width/2-.01),true)
 	return last
 
 func gallery() -> void:
-	# One continuous level with the wall walk; the palace storeys stay unchanged.
-	floorboards(Vector3(-4.75,3.6,-6.5),Vector2(25.5,3))
+	var y := GALLERY_Y
+	floorboards(Vector3(-4.75,y,-6.5),Vector2(25.5,3))
 	for x in [-17.3,-14.0,-11.0,-8.0,-5.0,-2.0,1.0,4.0,8.0]:
-		beam(Vector3(x,0,-5),Vector3(x,6.7,-5),.30,"beam",true)
-		beam(Vector3(x,5.8,-5),Vector3(x,6.8,-6.5),.15)
-		beam(Vector3(x,2.5,-5),Vector3(x,3.30,-6.4),.24)
-	# Openings serve the west wall corner, west stair landing and tower-side stair.
-	rail(Vector3(-12.75,3.6,-5),Vector3(5.55,3.6,-5))
-	# Two continuous bearers carry the cross joists and every floor plank.
-	beam(Vector3(-17.5,3.27,-5.05),Vector3(8.15,3.27,-5.05),.30)
-	beam(Vector3(-17.5,3.27,-7.85),Vector3(8.15,3.27,-7.85),.30)
+		beam(Vector3(x,0,-5),Vector3(x,y+3.0,-5),.30,"beam",true)
+		beam(Vector3(x,y+2.1,-5),Vector3(x,y+3.0,-6.5),.20,"beam",false,false)
+		beam(Vector3(x,y-1.1,-5),Vector3(x,y-.46,-6.4),.24,"beam",false,false)
+	beam(Vector3(-17.5,y-.19,-5.05),Vector3(8.15,y-.19,-5.05),.30,"beam",false,false)
+	beam(Vector3(-17.5,y-.19,-7.85),Vector3(8.15,y-.19,-7.85),.30,"beam",false,false)
 	for i in range(22):
 		var x: float = -17.35+i*1.2
-		beam(Vector3(x,3.40,-8.15),Vector3(x,3.40,-4.95),.24)
-	# Straight stair parallel to the front of the palace gallery.
-	flight(Vector3(-7.68,0,-4.1),Vector3.LEFT,18,.20,.32,1.6)
-	floorboards(Vector3(-14.4,3.6,-4.1),Vector2(3.04,1.95))
-	rail(Vector3(-15.92,3.6,-3.31),Vector3(-13.12,3.6,-3.31))
-	rail(Vector3(-15.92,3.6,-4.9),Vector3(-15.92,3.6,-3.31))
-	stair_routes.append({"start":Vector3(-7.03,.08,-4.1),"mid":Vector3(-10.24,1.9,-4.1),"turn":Vector3(-13.2,3.7,-4.1),"end":Vector3(-14.7,3.7,-4.1),"exit":Vector3(-14.7,3.7,-6.4)})
-	# Second straight stair runs along the west face of the tower, as marked in the image.
-	flight(Vector3(6.85,0,1.52),Vector3.FORWARD,18,.20,.32,1.6)
-	floorboards(Vector3(6.8,3.6,-4.95),Vector2(2.4,2.1))
-	rail(Vector3(5.55,3.6,-5),Vector3(6.06,3.6,-5))
-	rail(Vector3(6.06,3.6,-5),Vector3(6.06,3.6,-3.92))
-	rail(Vector3(7.64,3.6,-5),Vector3(7.64,3.6,-3.92))
-	stair_routes.append({"start":Vector3(6.85,.08,2.17),"mid":Vector3(6.85,1.9,-1.04),"turn":Vector3(6.85,3.7,-4),"end":Vector3(6.85,3.7,-4.8),"exit":Vector3(6.85,3.7,-6.5)})
-	tiled_plane(Vector3(-17.6,7.15,-8.3),Vector3(26.0,0,0),Vector3(0,-.70,4.95),true)
-	# Shed roof falls across the stair, from a ledger recessed in the tower wall.
-	tiled_plane(Vector3(8.15,6.75,-6.2),Vector3(0,0,8.55),Vector3(-2.80,-.90,0),true)
-	beam(Vector3(8.15,6.57,-6.2),Vector3(8.15,6.57,2.35),.28)
-	beam(Vector3(5.55,5.73,-6.2),Vector3(5.55,5.73,2.35),.28)
-	for z in [-5.8,-2.2,1.8]:
-		beam(Vector3(5.55,0,z),Vector3(5.55,5.85,z),.28,"beam",true)
-		beam(Vector3(5.55,5.1,z),Vector3(6.35,5.98,z),.20)
-	# Bearers below both upper landings, seated on the gallery structure.
-	for z in [-4.85,-3.45]:
-		beam(Vector3(-16.15,3.28,z),Vector3(-12.9,3.28,z),.28)
-	for x in [6.15,7.65]:
-		beam(Vector3(x,3.28,-6.2),Vector3(x,3.28,-3.85),.28)
+		beam(Vector3(x,y-.49,-8.15),Vector3(x,y-.49,-4.80),.30)
+	flight(Vector3(-5.44,0,-4.1),Vector3.LEFT,25,.20,.32,1.6)
+	floorboards(Vector3(-14.4,y,-4.1),Vector2(3.04,1.95))
+	rail(Vector3(-15.65,y,-3.31),Vector3(-13.12,y,-3.31))
+	rail(Vector3(-13.12,y,-4.89),Vector3(-13.12,y,-5))
+	rail(Vector3(-13.12,y,-5),Vector3(6.06,y,-5))
+	stair_routes.append({"start":Vector3(-4.79,.08,-4.1),"mid":Vector3(-9.28,2.7,-4.1),"turn":Vector3(-13.7,y+.1,-4.1),"end":Vector3(-14.7,y+.1,-4.1),"exit":Vector3(-14.7,y+.1,-6.4)})
+	flight(Vector3(6.85,0,3.76),Vector3.FORWARD,25,.20,.32,1.6,[1])
+	floorboards(Vector3(6.8,y,-4.95),Vector2(2.4,2.1))
+	rail(Vector3(6.06,y,-5),Vector3(6.06,y,-3.92))
+	stair_routes.append({"start":Vector3(6.85,.08,4.41),"mid":Vector3(6.85,2.7,-.08),"turn":Vector3(6.85,y+.1,-4.4),"end":Vector3(6.85,y+.1,-4.8),"exit":Vector3(6.85,y+.1,-6.5)})
+	tiled_plane(Vector3(-17.6,y+3.4,-8.3),Vector3(26,0,0),Vector3(0,-.70,4.95),true)
+	tiled_plane(Vector3(8.15,y+3.4,-6.2),Vector3(0,0,10.8),Vector3(-2.80,-.90,0),true)
+	beam(Vector3(8.15,y+3.22,-6.2),Vector3(8.15,y+3.22,4.6),.28,"beam",false,false)
+	beam(Vector3(5.55,y+2.38,-6.2),Vector3(5.55,y+2.38,4.6),.28,"beam",false,false)
+	for z in [-5.8,-.5,4.0]:
+		beam(Vector3(5.55,0,z),Vector3(5.55,y+2.5,z),.28,"beam",true)
+		beam(Vector3(5.55,y+1.75,z),Vector3(6.35,y+2.63,z),.20,"beam",false,false)
+	for z in [-4.85,-3.45]: beam(Vector3(-16.15,y-.19,z),Vector3(-12.9,y-.19,z),.28,"beam",false,false)
+	for x in [6.15,7.65]: beam(Vector3(x,y-.19,-6.2),Vector3(x,y-.19,-3.85),.28,"beam",false,false)
 
 func defensive_walk() -> void:
-	floorboards(Vector3(-16.6,3.6,4.6),Vector2(1.8,24.2))
-	floorboards(Vector3(1.25,3.6,16.6),Vector2(37.5,1.8))
-	rail(Vector3(-15.65,3.6,-4.9),Vector3(-15.65,3.6,13.5))
-	rail(Vector3(-15.6,3.6,15.65),Vector3(13.1,3.6,15.65))
-	rail(Vector3(15.9,3.6,15.65),Vector3(17.35,3.6,15.65))
+	var y := GALLERY_Y
+	floorboards(Vector3(-16.6,y,4.6),Vector2(1.8,24.2),true)
+	floorboards(Vector3(1.25,y,16.6),Vector2(37.5,1.8))
+	rail(Vector3(-15.65,y,-3.31),Vector3(-15.65,y,13.85))
+	rail(Vector3(-15.65,y,13.85),Vector3(-15.415,y,14.24))
+	rail(Vector3(-13.785,y,15.65),Vector3(13.15,y,15.65))
+	rail(Vector3(15.85,y,15.65),Vector3(17.35,y,15.65))
+	# Cross beams sit below the longitudinal bearers; struts seat in their underside.
 	for z in range(-4,17,3):
-		beam(Vector3(-17.90,3.40,z),Vector3(-15.65,3.40,z),.30)
-		beam(Vector3(-17.90,1.9,z),Vector3(-15.7,3.25,z),.30)
-	for x in range(-16,18,3):
-		beam(Vector3(x,3.40,17.90),Vector3(x,3.40,15.65),.30)
-		beam(Vector3(x,1.9,17.90),Vector3(x,3.25,15.7),.30)
-	for x in [-17.2,-15.9]:
-		beam(Vector3(x,3.24,-7.5),Vector3(x,3.24,17.3),.30)
-	for z in [16.0,17.2]:
-		beam(Vector3(-17.5,3.24,z),Vector3(20,3.24,z),.30)
-	# Rotate the gate stair onto the west side of the corner, along its gallery.
-	flight(Vector3(-14.6,0,8.80),Vector3.BACK,18,.20,.32,1.65)
-	floorboards(Vector3(-15.55,3.6,15.05),Vector2(3.90,1.9))
-	rail(Vector3(-13.785,3.6,14.24),Vector3(-13.785,3.6,15.65))
-	rail(Vector3(-13.785,3.6,15.65),Vector3(-15.6,3.6,15.65))
-	for x in [-15.3,-13.8]:
-		beam(Vector3(x,3.25,14.1),Vector3(x,3.25,16.3),.30)
-	stair_routes.append({"start":Vector3(-14.6,.08,8.15),"mid":Vector3(-14.6,1.9,11.36),"turn":Vector3(-14.6,3.7,15.05),"end":Vector3(-16.5,3.7,15.05),"exit":Vector3(-16.5,3.7,16.6)})
-	stone_floor(Vector3(18.75,3.6,-.25),Vector2(2.7,36.5))
-	stone_floor(Vector3(1.1,3.6,-18.75),Vector2(35.3,2.7))
-	rail(Vector3(17.35,3.6,-17.4),Vector3(17.35,3.6,-4.9))
-	rail(Vector3(17.35,3.6,-2.1),Vector3(17.35,3.6,15.65))
-	rail(Vector3(-16.55,3.6,-17.35),Vector3(17.35,3.6,-17.35))
-	rail(Vector3(-16.55,3.6,-20.1),Vector3(-16.55,3.6,-17.35))
-	wall_routes = [Vector3(-16.5,3.7,-4),Vector3(-16.5,3.7,16.6),Vector3(0,3.7,16.6),Vector3(18.75,3.7,16.6),Vector3(18.75,3.7,-18.75),Vector3(-15.7,3.7,-18.75)]
+		beam(Vector3(-17.90,y-.49,z),Vector3(-15.50,y-.49,z),.30)
+		beam(Vector3(-17.90,y-1.7,z),Vector3(-15.80,y-.57,z),.30,"beam",false,false)
+	for x in [-16.0,-13.0,-10.0,-7.0,-4.7,4.7,7.0,10.0,13.0,16.0,19.0]:
+		beam(Vector3(x,y-.49,17.90),Vector3(x,y-.49,15.50),.30)
+		beam(Vector3(x,y-1.7,17.90),Vector3(x,y-.57,15.80),.30,"beam",false,false)
+	for x in [-17.2,-15.9]: beam(Vector3(x,y-.19,-7.5),Vector3(x,y-.19,17.3),.30,"beam",false,false)
+	for z in [16.0,17.2]: beam(Vector3(-17.5,y-.19,z),Vector3(20,y-.19,z),.30,"beam",false,false)
+	flight(Vector3(-14.6,0,6.56),Vector3.BACK,25,.20,.32,1.65)
+	floorboards(Vector3(-15.55,y,15.05),Vector2(3.90,1.9),true)
+	rail(Vector3(-13.785,y,14.24),Vector3(-13.785,y,15.65))
+	for x in [-15.3,-13.8]: beam(Vector3(x,y-.19,14.1),Vector3(x,y-.19,16.3),.30,"beam",false,false)
+	stair_routes.append({"start":Vector3(-14.6,.08,5.91),"mid":Vector3(-14.6,2.7,10.40),"turn":Vector3(-14.6,y+.1,15.05),"end":Vector3(-16.5,y+.1,15.05),"exit":Vector3(-16.5,y+.1,16.6)})
+	stone_floor(Vector3(18.75,y,-.25),Vector2(2.7,36.5))
+	stone_floor(Vector3(1.1,y,-18.75),Vector2(35.3,2.7))
+	# Building walls already protect the rear walk; guards only border open courtyard edges.
+	rail(Vector3(-16.55,y,-17.35),Vector3(17.35,y,-17.35))
+	rail(Vector3(-16.55,y,-20.1),Vector3(-16.55,y,-17.35))
+	wall_routes = [Vector3(-16.5,y+.1,-4),Vector3(-16.5,y+.1,16.6),Vector3(0,y+.1,16.6),Vector3(18.75,y+.1,16.6),Vector3(18.75,y+.1,-18.75),Vector3(-15.7,y+.1,-18.75)]
 	rooms.append({"name":"Kamenný ochoz za věží","rect":Rect2(17.35,-20.1,2.7,37.6)})
 	rooms.append({"name":"Severní hradby","rect":Rect2(-16.55,-20.1,36.5,2.7)})
 	rooms.append({"name":"Obranný ochoz","rect":Rect2(-17.5,-7.5,1.9,25)})
 	rooms.append({"name":"Ochoz nad bránou","rect":Rect2(-17.5,15.6,35,1.9)})
 
 func build_tower() -> void:
-	for y in [0.0,3.6,7.2,10.8]:
-		window_wall(Vector3(8,y,-3.5),9,3.6,[0.0],PI/2)
-		if y==3.6:
-			wall(Vector3(17,3.6,-3.5),9,3.6,[0.0],["Východní hradby"],PI/2)
-		else:
-			wall_piece(Vector3(17,y+1.8,-3.5),Vector3(9,3.6,.6),PI/2)
-		if y>=7.2:
-			window_wall(Vector3(12.5,y,-8),9,3.6,[0.0])
-			window_wall(Vector3(12.5,y,1),9,3.6,[0.0])
-	floorboards(Vector3(12.5,0,-3.5),Vector2(9,9))
+	for index in range(4):
+		var y: float = TOWER_LEVELS[index]
+		var h: float = GALLERY_Y if index==0 else FLOOR_STEP
+		window_wall(Vector3(8,y,-3.5),9,h,[0.0],PI/2)
+		if index==1: wall(Vector3(17,y,-3.5),9,h,[0.0],["Východní hradby"],PI/2)
+		else: wall_piece(Vector3(17,y+h*.5,-3.5),Vector3(9,h,.6),PI/2)
+		if index>=2:
+			window_wall(Vector3(12.5,y,-8),9,h,[0.0])
+			window_wall(Vector3(12.5,y,1),9,h,[0.0])
+	stone_floor(Vector3(12.5,0,-3.5),Vector2(9,9))
+	wall_piece(Vector3(11.5,1.55,-4.4),Vector3(6.6,3.1,.30),PI/2)
+	wall_piece(Vector3(11.5,1.55,.65),Vector3(.7,3.1,.30),PI/2)
+	wall_piece(Vector3(11.5,2.95,-.35),Vector3(1.3,.30,.30),PI/2)
+	# The western bay stays open for the stairwell; the main ground-floor room is vaulted.
+	vaulted_ceiling(Vector3(14.15,0,-3.5),Vector2(5.05,8.4),true)
 	for floor in range(4):
-		var y := floor*3.6
+		var y: float = TOWER_LEVELS[floor]
 		if floor>0:
-			floorboards(Vector3(14.15,y,-3.5),Vector2(5.05,8.2))
-			floorboards(Vector3(9.95,y,-.18),Vector2(3.46,1.9))
+			stone_floor(Vector3(14.15,y,-3.5),Vector2(5.05,8.2))
+			stone_floor(Vector3(9.95,y,-.18),Vector2(3.46,1.9))
 			rail(Vector3(11.68,y,-7.75),Vector3(11.68,y,-1.12))
 		if floor<3:
-			flight(Vector3(9.12,y,-.9),Vector3.FORWARD,10,.18,.48,1.5)
-			floorboards(Vector3(9.93,y+1.8,-6.35),Vector2(3.40,2.82))
-			rail(Vector3(11.63,y+1.8,-7.76),Vector3(11.63,y+1.8,-4.94))
-			flight(Vector3(10.82,y+1.8,-5.22),Vector3.BACK,10,.18,.48,1.5)
-			stair_routes.append({"start":Vector3(9.12,y+.08,-.2),"mid":Vector3(9.12,y+1.9,-6.05),"turn":Vector3(10.82,y+1.9,-6.05),"end":Vector3(10.82,y+3.7,-.35),"exit":Vector3(14,y+3.7,-.35)})
-	floorboards(Vector3(16.55,3.6,-3.5),Vector2(1.9,2.7))
-	for z in [-4.85,-2.15]:
-		rail(Vector3(15.6,3.6,z),Vector3(16.7,3.6,z))
-	floorboards(Vector3(12.5,14.4,-3.5),Vector2(9,9))
-	hip_roof(Vector3(12.5,14.45,-3.5),Vector2(10,10),3.2)
+			var next: float = TOWER_LEVELS[floor+1]
+			var half: float = (next-y)*.5
+			var count := 13 if floor==0 else 9
+			var run := 4.32/(count-1)
+			flight(Vector3(9.12,y,-.9),Vector3.FORWARD,count,half/count,run,1.5)
+			floorboards(Vector3(9.93,y+half,-6.35),Vector2(3.40,2.82))
+			rail(Vector3(11.63,y+half,-7.76),Vector3(11.63,y+half,-4.94))
+			flight(Vector3(10.82,y+half,-5.22),Vector3.BACK,count,half/count,run,1.5)
+			stair_routes.append({"start":Vector3(9.12,y+.08,-.2),"mid":Vector3(9.12,y+half+.1,-6.05),"turn":Vector3(10.82,y+half+.1,-6.05),"end":Vector3(10.82,next+.1,-.35),"exit":Vector3(14,next+.1,-.35)})
+	stone_floor(Vector3(16.55,GALLERY_Y,-3.5),Vector2(1.9,2.7))
+	# No railing against a solid wall at the eastern doorway.
+	floorboards(Vector3(12.5,14.61,-3.5),Vector2(9,9))
+	hip_roof(Vector3(12.5,14.67,-3.5),Vector2(10,10),3.2)
 	rooms.append({"name":"Věž","rect":Rect2(8,-8,9,9)})
 
+func vaulted_ceiling(pos: Vector3, size: Vector2, across_x := false) -> void:
+	var result := Vault.make(pos,size,across_x)
+	batch(result.mesh,Transform3D.IDENTITY,"vault_stone")
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(result.mesh.get_faces())
+	shape.backface_collision = true
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	static_body.add_child(collider)
+	vaults.append({"center":pos,"size":size,"apex":4.5,"across_x":across_x})
+
+func gate_wall(height: float) -> void:
+	var half_open := 2.50
+	wall_piece(Vector3(-10.25,height*.5,18),Vector3(15.5,height,.85))
+	wall_piece(Vector3(11.5,height*.5,18),Vector3(18.0,height,.85))
+	wall_piece(Vector3(0,(height+3.75)*.5,18),Vector3(5.0,height-3.75,.85))
+	for x in [-2.64,2.64]:
+		for j in range(8):
+			batch(Construction.block(Vector3(.32,.45,1.03),.025),Transform3D(Basis.IDENTITY,Vector3(x,(j+.5)*.47,18)),"trim")
+	batch(Construction.block(Vector3(5.65,.38,1.03),.035),Transform3D(Basis.IDENTITY,Vector3(0,3.91,18)),"trim")
+	var leaves: Array = []
+	for side in [-1,1]:
+		var door := Door.new()
+		door.width = 2.38
+		door.height = 3.68
+		door.position = Vector3(side*1.21,0,18)
+		door.rotation.y = PI if side==1 else 0.0
+		door.opening_side = -1.0 if side==1 else 1.0
+		add_child(door)
+		door.configure(mats.door,mats.iron,"Vstupní brána")
+		doors.append(door)
+		leaves.append(door)
+	leaves[0].partner = leaves[1]
+	leaves[1].partner = leaves[0]
+	# Clear wall areas beside both jambs are reserved for future torch sockets.
+
 func details() -> void:
-	for y in [0.0,3.6]:
+	for y in [0.0,GALLERY_Y]:
 		box(Vector3(-4.6,y+1.9,-16.59),Vector3(5,2.65,.055),"plaster")
 		box(Vector3(4,y+1.9,-16.59),Vector3(3,2.65,.055),"plaster")
 	for pos in [Vector3(-11,2,-14),Vector3(0,2,-14),Vector3(11,2,-14),Vector3(14,5,-4),Vector3(14,9,-4),Vector3(14,12,-4),Vector3(13,2,9),Vector3(13,5.5,9)]:
