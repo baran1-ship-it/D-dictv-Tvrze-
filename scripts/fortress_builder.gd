@@ -100,7 +100,12 @@ func textured(path: String, scale: float, tint: Color) -> StandardMaterial3D:
 	mat.uv1_triplanar = true
 	mat.uv1_world_triplanar = true
 	mat.uv1_scale = Vector3.ONE*scale
-	var normal := mat.albedo_texture.get_image()
+	var color_image := mat.albedo_texture.get_image()
+	if color_image.is_compressed():
+		color_image.decompress()
+	color_image.generate_mipmaps()
+	mat.albedo_texture = ImageTexture.create_from_image(color_image)
+	var normal := color_image.duplicate() as Image
 	if normal.is_compressed():
 		normal.decompress()
 	normal.resize(256,256)
@@ -129,6 +134,7 @@ func make_materials() -> void:
 			var shade := .75+float((row*17+column*11)%9)*.025+float((x*13+y*7)%19)/190
 			texture_image.set_pixel(x,y,Color("755346")*(.48 if seam else shade))
 	var roof_mat := plain(Color.WHITE,.9)
+	texture_image.generate_mipmaps()
 	roof_mat.albedo_texture = ImageTexture.create_from_image(texture_image)
 	roof_mat.uv1_triplanar = true
 	roof_mat.uv1_world_triplanar = true
@@ -226,14 +232,14 @@ func roof(pos: Vector3, size: Vector2, rise: float, along_x: bool) -> void:
 		vertices = [Vector3(-w,0,-d),Vector3(-w,0,d),Vector3(0,rise,d),Vector3(0,rise,-d),Vector3(w,0,-d),Vector3(w,0,d)]
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for index in [0,2,1,0,3,2,4,5,2,4,2,3]:
+	for index in [0,1,2,0,2,3,4,2,5,4,3,2]:
 		surface.set_uv(Vector2(vertices[index].x,vertices[index].z))
 		surface.add_vertex(vertices[index]+pos)
 	surface.generate_normals()
 	batch(surface.commit(),Transform3D.IDENTITY,"roof")
 	var ends := SurfaceTool.new()
 	ends.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for index in [0,4,3,1,2,5]:
+	for index in [0,3,4,1,5,2]:
 		ends.set_uv(Vector2(vertices[index].x,vertices[index].y))
 		ends.add_vertex(vertices[index]+pos)
 	ends.generate_normals()

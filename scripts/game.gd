@@ -63,7 +63,7 @@ func setup_environment() -> void:
 	sky.sky_material = sky_mat
 	settings.sky = sky
 	settings.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	settings.ambient_light_energy = .48
+	settings.ambient_light_energy = .35
 	settings.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	settings.fog_enabled = true
 	settings.fog_light_color = Color("bac3c1")
@@ -73,7 +73,7 @@ func setup_environment() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-46,-32,0)
 	sun.light_color = Color("fff0d6")
-	sun.light_energy = 1.2
+	sun.light_energy = .8
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 55
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
@@ -269,7 +269,7 @@ func create_hand() -> void:
 
 func _process(_delta: float) -> void:
 	if is_instance_valid(hand) and hand.visible:
-		var elbow := Vector3(.5,-.52,.1)
+		var elbow := Vector3(.32,-.43,-.32)
 		var wrist := hand.position+Vector3(0,0,.08)
 		var length := wrist.distance_to(elbow)
 		forearm.global_transform = camera.global_transform*Transform3D(Basis(Quaternion(Vector3.UP,(wrist-elbow).normalized())).scaled(Vector3(1,length/.45,1)),(wrist+elbow)*.5)
