@@ -150,17 +150,25 @@ func textured(path: String, scale: float, tint: Color, triplanar := true) -> Sta
 	mat.normal_scale = .18
 	return mat
 
+func mip_texture(path: String, normal_map := false) -> ImageTexture:
+	var image := (load(path) as Texture2D).get_image()
+	if image.is_compressed(): image.decompress()
+	image.clear_mipmaps()
+	image.generate_mipmaps(normal_map)
+	return ImageTexture.create_from_image(image)
+
 func pbr(asset: String, tint := Color.WHITE) -> StandardMaterial3D:
 	var material := plain(tint)
 	var prefix := "res://assets/materials/pbr/"+asset
-	material.albedo_texture = load(prefix+"_diff.jpg")
+	material.albedo_texture = mip_texture(prefix+"_diff.jpg")
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	material.normal_enabled = true
-	material.normal_texture = load(prefix+"_normal.jpg")
+	material.normal_texture = mip_texture(prefix+"_normal.jpg",true)
 	material.normal_scale = .45
-	material.roughness_texture = load(prefix+"_rough.jpg")
+	material.roughness_texture = mip_texture(prefix+"_rough.jpg")
 	material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
 	material.ao_enabled = true
-	material.ao_texture = load(prefix+"_ao.jpg")
+	material.ao_texture = mip_texture(prefix+"_ao.jpg")
 	material.ao_light_affect = .35
 	var image := (load(prefix+"_height.jpg") as Texture2D).get_image()
 	if image.is_compressed():
