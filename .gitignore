@@ -1,0 +1,8 @@
+.godot/
+*.apk
+*.aab
+export_credentials.cfg
+.ci-data/
+.ci-config/
+.ci-cache/
+build/

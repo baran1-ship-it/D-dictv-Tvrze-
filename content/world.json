@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "chunks": [
+    {"id": "fortress", "center": [0, 0], "radius": 160, "builder": "fortress", "version": 1},
+    {"id": "north_landscape", "center": [0, -160], "radius": 150, "builder": "landscape", "version": 1},
+    {"id": "south_landscape", "center": [0, 160], "radius": 150, "builder": "landscape", "version": 1},
+    {"id": "east_landscape", "center": [160, 0], "radius": 150, "builder": "landscape", "version": 1},
+    {"id": "west_landscape", "center": [-160, 0], "radius": 150, "builder": "landscape", "version": 1}
+  ]
+}
