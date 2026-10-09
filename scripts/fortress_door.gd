@@ -102,5 +102,5 @@ func toggle(player_position: Vector3) -> bool:
 	return true
 
 func grasp_position(player_position: Vector3) -> Vector3:
-	var side := 1.0 if to_local(player_position).z>=0 else -1.0
+	var side := 1.0 if body.to_local(player_position).z>=0 else -1.0
 	return handle.to_global(Vector3(0,0,side*.11))

@@ -69,6 +69,7 @@ func setup_environment() -> void:
 	settings.fog_enabled = true
 	settings.fog_light_color = Color("bac3c1")
 	settings.fog_density = .0014
+	settings.fog_sky_affect = .12
 	environment.environment = settings
 	add_child(environment)
 	var sun := DirectionalLight3D.new()
@@ -275,4 +276,4 @@ func _process(_delta: float) -> void:
 		var elbow := Vector3(.30,-.48,-.48)
 		var wrist := hand.position+Vector3(0,0,.08)
 		var length := wrist.distance_to(elbow)
-		forearm.global_transform = camera.global_transform*Transform3D(Basis(Quaternion(Vector3.UP,(wrist-elbow).normalized())).scaled(Vector3(1,length/.45,1)),(wrist+elbow)*.5)
+		forearm.global_transform = camera.global_transform*Transform3D(Basis(Quaternion(Vector3.UP,(wrist-elbow).normalized())).scaled_local(Vector3(1,length/.45,1)),(wrist+elbow)*.5)

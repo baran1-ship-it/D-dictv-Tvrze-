@@ -18,7 +18,7 @@ func run() -> void:
 	game.controls.touch_visible = true
 	game.message_time = 0
 	game.hint.text = ""
-	await shot("courtyard.png",Vector3(-3,.1,10),-.18,-.13)
+	await shot("courtyard.png",Vector3(-8,.1,15.2),-.35,-.28)
 	await shot("east-wing.png",Vector3(-3,.1,8),-1.25,-.13)
 	await shot("wall-walk.png",Vector3(-16.5,4.6,8),3.25,-.06)
 	await shot("tower-stairs.png",Vector3(14,3.7,-.4),1.15,.05)

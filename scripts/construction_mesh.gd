@@ -26,8 +26,8 @@ static func block(size: Vector3, bevel: float, grain := false, phase := Vector2.
 		var j := (i+1)%8
 		var n := Vector3((ring[i]+ring[j]).x,0,(ring[i]+ring[j]).y).normalized()
 		quad(s,[bottom[i],bottom[j],top[j],top[i]],n,Vector2(ring[i].distance_to(ring[j])*.7,size.y*.7) if grain else Vector2.ONE, phase)
-		var ti := Vector3(ring[i].x*.92,y,ring[i].y*.92)
-		var tj := Vector3(ring[j].x*.92,y,ring[j].y*.92)
+		var ti := Vector3(ring[i].x*.98,y,ring[i].y*.98)
+		var tj := Vector3(ring[j].x*.98,y,ring[j].y*.98)
 		var bi := Vector3(ti.x,-y,ti.z)
 		var bj := Vector3(tj.x,-y,tj.z)
 		quad(s,[top[i],top[j],tj,ti],(n+Vector3.UP).normalized())

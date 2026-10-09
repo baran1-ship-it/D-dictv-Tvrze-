@@ -122,10 +122,11 @@ func run() -> void:
 	# Check every threshold has support on both sides, and no overhead collision.
 	for d in game.world.doors:
 		for side in [-1,1]:
-			var pos: Vector3 = d.to_global(Vector3(0,.15,side*.65))
-			var query := PhysicsRayQueryParameters3D.create(pos+Vector3(0,.15,0),pos-Vector3(0,.65,0))
-			query.exclude = [game.player.get_rid()]
-			check(not game.get_world_3d().direct_space_state.intersect_ray(query).is_empty(),"door must have a floor on both sides: "+d.title)
+			for offset in [-.7,0.0,.7]:
+				var pos: Vector3 = d.to_global(Vector3(offset,.15,side*.65))
+				var query := PhysicsRayQueryParameters3D.create(pos+Vector3(0,.15,0),pos-Vector3(0,.65,0))
+				query.exclude = [game.player.get_rid()]
+				check(not game.get_world_3d().direct_space_state.intersect_ray(query).is_empty(),"door must have a floor on both sides: "+d.title)
 	game.controls.reset_touches()
 	game.queue_free()
 	await process_frame

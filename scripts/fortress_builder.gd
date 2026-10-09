@@ -80,7 +80,11 @@ func build() -> void:
 	floorboards(Vector3(12.5,7.2,8),Vector2(9,14))
 	roof(Vector3(12.5,7.25,8),Vector2(10,15),3,false)
 	flight(Vector3(14.5,3.6,12.45),Vector3.BACK,5,.18,.4,1.6)
-	floorboards(Vector3(14.5,4.5,15.25),Vector2(1.6,2.1))
+	floorboards(Vector3(14.5,4.5,15.25),Vector2(2.7,2.1))
+	for x in [13.15,15.85]:
+		rail(Vector3(x,4.5,14.2),Vector3(x,4.5,14.7))
+	rail(Vector3(13.15,4.5,14.2),Vector3(13.7,4.5,14.2))
+	rail(Vector3(15.3,4.5,14.2),Vector3(15.85,4.5,14.2))
 	stair_routes.append({"start":Vector3(14.5,3.68,11.9),"mid":Vector3(14.5,4.14,13.3),"turn":Vector3(14.5,4.6,14.4),"end":Vector3(14.5,4.6,14.4),"exit":Vector3(14.5,4.6,14.4)})
 	rooms.append({"name":"Obytné křídlo","rect":Rect2(8,1,9,14)})
 	build_tower()
@@ -138,7 +142,7 @@ func textured(path: String, scale: float, tint: Color, triplanar := true) -> Sta
 func make_materials() -> void:
 	mats.stone = textured("res://assets/materials/rock.jpg",.9,Color("a49f91"))
 	mats.trim = plain(Color("b5ac96"))
-	mats.mortar = plain(Color("7e7b6e"))
+	mats.mortar = plain(Color("5b5548"))
 	mats.plaster = plain(Color("c8bda4"))
 	var noise := FastNoiseLite.new()
 	noise.frequency = .11
@@ -272,8 +276,8 @@ func courtyard() -> void:
 			if px>17.6:
 				continue
 			var id := "cobble"+str(rng.randi_range(0,5))
-			var scale := Vector3(rng.randf_range(.39,.44),rng.randf_range(.075,.10),rng.randf_range(.39,.44))
-			var basis := Basis(Vector3.UP,rng.randf_range(-.08,.08)).scaled(scale)
+			var scale := Vector3(rng.randf_range(.44,.46),rng.randf_range(.075,.10),rng.randf_range(.44,.46))
+			var basis := Basis(Vector3.UP,rng.randf_range(-.08,.08)).scaled_local(scale)
 			batch(mesh_cache[id],Transform3D(basis,Vector3(px,rng.randf_range(-.026,-.018),pz)),id)
 			stone_count += 1
 	# A shallow drain is visible, while the movement surface stays smooth.
@@ -301,7 +305,7 @@ func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 				var depth := rng.randf_range(.10,.16)
 				var offset := Vector3(start+w/2,-size.y/2+(row+.5)*h,side*(size.z/2+.015))
 				var scale := Vector3(maxf(.02,w-.022),maxf(.02,h-.028),depth)
-				batch(mesh_cache[id],Transform3D(basis.scaled(scale),pos+basis*offset),id)
+				batch(mesh_cache[id],Transform3D(basis.scaled_local(scale),pos+basis*offset),id)
 				stone_count += 1
 			start += w
 
@@ -438,7 +442,7 @@ func gable(points: Array, normal: Vector3) -> void:
 			var id := "rock"+str(rng.randi_range(0,5))
 			for side in [-1,1]:
 				var p: Vector3 = center+axis*(x+w/2)+Vector3(0,(row+.5)*h,0)+normal*side*.025
-				batch(mesh_cache[id],Transform3D(basis.scaled(Vector3(maxf(.02,w-.02),h-.03,.13)),p),id)
+				batch(mesh_cache[id],Transform3D(basis.scaled_local(Vector3(maxf(.02,w-.02),h-.03,.13)),p),id)
 			x += w
 
 func rail(a: Vector3, b: Vector3, opening := false) -> void:
@@ -492,7 +496,10 @@ func gallery() -> void:
 		beam(Vector3(-16.2,1.3,z),Vector3(-15.0,1.73,z),.16)
 	rail(Vector3(-16.3,1.8,-6.85),Vector3(-16.3,1.8,-4.15))
 	rail(Vector3(-16.3,1.8,-4.15),Vector3(-14.9,1.8,-4.15))
-	floorboards(Vector3(-16.5,3.6,-7.6),Vector2(1.6,.8))
+	floorboards(Vector3(-15.9,3.6,-7.6),Vector2(2.7,.8))
+	rail(Vector3(-15.7,3.6,-7.2),Vector3(-14.55,3.6,-7.2))
+	for x in [-17.25,-14.55]:
+		rail(Vector3(x,3.6,-8),Vector3(x,3.6,-7.2))
 	flight(Vector3(-16.5,3.6,-6.9),Vector3.BACK,5,.18,.4,1.6)
 	stair_routes.append({"start":Vector3(-9.95,.08,-4.5),"mid":Vector3(-15.6,1.9,-4.5),"turn":Vector3(-15.6,1.9,-6.5),"end":Vector3(-9.7,3.7,-6.5),"exit":Vector3(-8.8,3.7,-6.5)})
 	stair_routes.append({"start":Vector3(-16.5,3.68,-7.6),"mid":Vector3(-16.5,4.6,-4.7),"turn":Vector3(-16.5,4.6,-4.4),"end":Vector3(-16.5,4.6,-3),"exit":Vector3(-16.5,4.6,0)})
