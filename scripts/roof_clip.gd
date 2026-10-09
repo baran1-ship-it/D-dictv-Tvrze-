@@ -2,7 +2,7 @@ extends RefCounted
 
 # Subtract the tower envelope while preserving UVs, normals and vertex colours.
 # The cut terminates in the masonry; no neighbouring roof can enter a tower room.
-const MINIMUM := Vector3(7.64,7.98,-8.36)
+const MINIMUM := Vector3(7.64,0.0,-8.36)
 const MAXIMUM := Vector3(17.36,14.4,1.36)
 
 static func split(poly: Array, axis: int, limit: float, less: bool) -> Array:
