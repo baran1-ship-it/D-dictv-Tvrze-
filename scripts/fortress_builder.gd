@@ -387,7 +387,7 @@ func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 		stone_count += stone.stones
 		relief_cells += stone.stones*6
 		if style=="palace":
-			var lime := Masonry.plaster(origin+basis*f[3]*.044,basis*f[1],basis*f[2],basis*f[3],f[4],i==1)
+			var lime := Masonry.plaster(origin+basis*f[3]*.056,basis*f[1],basis*f[2],basis*f[3],f[4],i==1)
 			if lime.get_surface_count()>0: batch(lime,Transform3D.IDENTITY,"plaster")
 
 func wall(pos: Vector3, width: float, height: float, centers: Array, titles: Array, angle := 0.0) -> void:
