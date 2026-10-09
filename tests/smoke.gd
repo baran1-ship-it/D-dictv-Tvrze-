@@ -39,7 +39,7 @@ func run() -> void:
 	for frame in range(10):
 		await physics_frame
 	check(game.world.doors.size()==19,"19 usable doors should be present")
-	check(game.world.stair_routes.size()==8,"gallery, wall access and three tower flights should exist")
+	check(game.world.stair_routes.size()==6,"three straight external stairs and three tower flights should exist")
 	check(not game.has_method("release_arrow"),"archery must be absent")
 	var c = game.controls
 	var center: Vector2 = c.joystick_center()
@@ -102,7 +102,7 @@ func run() -> void:
 	for w in game.world.windows:
 		check(absf(w.x-17)>.01 and absf(w.z+17)>.01,"windows facing the inaccessible inner perimeter must be removed")
 	# Sample the corrected wall-side seams, using visible floor footprints as well as collision rays.
-	for pos in [Vector3(-17.35,1.8,-5.5),Vector3(-15.6,1.8,-7.65),Vector3(-17.35,3.6,-7.6),Vector3(8.4,3.6,.6),Vector3(9.2,1.8,-7.6),Vector3(9.2,5.4,-7.6),Vector3(9.2,9,-7.6)]:
+	for pos in [Vector3(-17.35,3.6,-6.5),Vector3(-14.7,3.6,-4.1),Vector3(6.85,3.6,-4.8),Vector3(8.4,3.6,.6),Vector3(9.2,1.8,-7.6),Vector3(9.2,5.4,-7.6),Vector3(9.2,9,-7.6)]:
 		var supported := false
 		for f in game.world.floor_patches:
 			if absf(f.pos.y-pos.y)<.02 and Rect2(Vector2(f.pos.x,f.pos.z)-f.size*.5,f.size).has_point(Vector2(pos.x,pos.z)): supported = true
@@ -139,6 +139,11 @@ func run() -> void:
 		if not passed:
 			print("Wall failure: player=",game.player.position," target=",point)
 		check(passed,"wall walk must connect through courtyard corners and across gate")
+	game.player.position = Vector3(-14.7,3.7,-6.4)
+	game.player.velocity = Vector3.ZERO
+	for frame in range(8): await physics_frame
+	for point in [Vector3(-16.6,3.7,-6.4),Vector3(-16.6,3.7,-4),Vector3(-16.6,3.7,0),Vector3(-16.6,3.7,-6.4),Vector3(-14.7,3.7,-6.4)]:
+		check(await walk_to(point),"palace gallery and wall walk must join at one level")
 	# Walk through the complete upper doorway, including its outer railing gap.
 	for d in game.world.doors:
 		if d.title not in ["Přístup na hradby","Obranný ochoz","Východní hradby"]:

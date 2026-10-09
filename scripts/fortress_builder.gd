@@ -46,16 +46,16 @@ func build() -> void:
 			batch(foliage,Transform3D(Basis.IDENTITY,pos+Vector3(sin(j*2.4)*.7,4.5+j*.9,cos(j*2.4)*.7)),"leaves")
 	use_solid_masonry = true
 	for x in [-18.0,20.5]:
-		wall_piece(Vector3(x,2.8,-1.25),Vector3(38.5,5.6,.85),PI/2)
-	wall_piece(Vector3(1.25,2.8,-20.5),Vector3(38.5,5.6,.85))
-	wall(Vector3(1.25,0,18),38.5,5.6,[-1.25],["Vstupní brána"])
+		wall_piece(Vector3(x,2.35,-1.25),Vector3(38.5,4.7,.85),PI/2)
+	wall_piece(Vector3(1.25,2.35,-20.5),Vector3(38.5,4.7,.85))
+	wall(Vector3(1.25,0,18),38.5,4.7,[-1.25],["Vstupní brána"])
 	for i in range(20):
 		var p := -17.0+i*1.9
 		for z in [-20.5,18.0]:
-			wall_piece(Vector3(p,6.1,z),Vector3(.95,1,1))
+			wall_piece(Vector3(p,5.2,z),Vector3(.95,1,1))
 		var q := -19.5+i*1.9
 		for x in [-18.0,20.5]:
-			wall_piece(Vector3(x,6.1,q),Vector3(1,1,.95))
+			wall_piece(Vector3(x,5.2,q),Vector3(1,1,.95))
 	use_solid_masonry = false
 	# A connected palace with real floorboards and masonry openings.
 	floorboards(Vector3(0,0,-12.5),Vector2(34,9))
@@ -86,17 +86,12 @@ func build() -> void:
 		if y==0:
 			window_wall(Vector3(12.5,y,15),9,3.6,[0.0])
 		else:
-			wall_piece(Vector3(12.5,4.05,15),Vector3(9,.9,.6))
-			wall(Vector3(12.5,4.5,15),9,2.75,[2.0],["Přístup na hradby"])
+			wall(Vector3(12.5,3.6,15),9,3.6,[2.0],["Přístup na hradby"])
 	floorboards(Vector3(12.5,7.2,8),Vector2(9,14))
 	roof(Vector3(12.5,7.25,8),Vector2(10,15),3,false)
-	flight(Vector3(14.5,3.6,12.45),Vector3.BACK,5,.18,.4,1.6)
-	floorboards(Vector3(14.5,4.5,15.25),Vector2(2.7,2.1))
+	floorboards(Vector3(14.5,3.6,15.25),Vector2(2.7,2.1))
 	for x in [13.15,15.85]:
-		rail(Vector3(x,4.5,14.2),Vector3(x,4.5,14.7))
-	rail(Vector3(13.15,4.5,14.2),Vector3(13.7,4.5,14.2))
-	rail(Vector3(15.3,4.5,14.2),Vector3(15.85,4.5,14.2))
-	stair_routes.append({"start":Vector3(14.5,3.68,11.9),"mid":Vector3(14.5,4.14,13.3),"turn":Vector3(14.5,4.6,14.4),"end":Vector3(14.5,4.6,14.4),"exit":Vector3(14.5,4.6,14.4)})
+		rail(Vector3(x,3.6,14.65),Vector3(x,3.6,15.7))
 	rooms.append({"name":"Obytné křídlo","rect":Rect2(8,1,9,14)})
 	build_tower()
 	defensive_walk()
@@ -567,68 +562,69 @@ func flight(first: Vector3, direction: Vector3, count: int, rise: float, run: fl
 	return last
 
 func gallery() -> void:
-	floorboards(Vector3(-1.2,3.6,-6.5),Vector2(18.4,3))
-	for x in [-10.0,-7.0,-4.0,-1.0,2.0,5.0,8.0]:
+	# One continuous level with the wall walk; the palace storeys stay unchanged.
+	floorboards(Vector3(-4.75,3.6,-6.5),Vector2(25.5,3))
+	for x in [-17.3,-14.0,-11.0,-8.0,-5.0,-2.0,1.0,4.0,8.0]:
 		beam(Vector3(x,0,-5),Vector3(x,6.7,-5),.23,"beam",true)
 		beam(Vector3(x,5.8,-5),Vector3(x,6.8,-6.5),.15)
 		beam(Vector3(x,2.5,-5),Vector3(x,3.48,-6.4),.17)
-		if x<8:
-			rail(Vector3(x,3.6,-5),Vector3(minf(x+3,8),3.6,-5))
-	beam(Vector3(-10.4,3.45,-5),Vector3(8,3.45,-5),.25)
-	# Compact U stair runs parallel to the facade, under one joined canopy.
-	flight(Vector3(-10.6,0,-4.5),Vector3.LEFT,10,.18,.48,1.6)
-	floorboards(Vector3(-16.18,1.8,-5.68),Vector2(2.72,4.06))
-	flight(Vector3(-14.92,1.8,-6.5),Vector3.RIGHT,10,.18,.48,1.6)
-	for z in [-6.7,-4.3]:
-		beam(Vector3(-17.05,0,z),Vector3(-17.05,6.8,z),.23,"beam",true)
-		beam(Vector3(-17.05,1.3,z),Vector3(-15.0,1.73,z),.16)
-	rail(Vector3(-17.45,1.8,-7.71),Vector3(-17.45,1.8,-3.65))
-	rail(Vector3(-17.45,1.8,-7.71),Vector3(-14.82,1.8,-7.71))
-	rail(Vector3(-17.45,1.8,-3.65),Vector3(-14.82,1.8,-3.65))
-	floorboards(Vector3(-15.85,3.6,-7.6),Vector2(3.4,.8))
-	rail(Vector3(-15.7,3.6,-7.2),Vector3(-14.55,3.6,-7.2))
-	for x in [-17.48,-14.55]:
-		rail(Vector3(x,3.6,-8),Vector3(x,3.6,-7.2))
-	flight(Vector3(-16.5,3.6,-6.9),Vector3.BACK,5,.18,.4,1.6)
-	stair_routes.append({"start":Vector3(-9.95,.08,-4.5),"mid":Vector3(-15.6,1.9,-4.5),"turn":Vector3(-15.6,1.9,-6.5),"end":Vector3(-9.7,3.7,-6.5),"exit":Vector3(-8.8,3.7,-6.5)})
-	stair_routes.append({"start":Vector3(-16.5,3.68,-7.6),"mid":Vector3(-16.5,4.6,-4.7),"turn":Vector3(-16.5,4.6,-4.4),"end":Vector3(-16.5,4.6,-3),"exit":Vector3(-16.5,4.6,0)})
-	tiled_plane(Vector3(-17.2,7.15,-8.3),Vector3(25.6,0,0),Vector3(0,-.70,4.95),true)
+	# Openings serve the west wall corner, west stair landing and tower-side stair.
+	rail(Vector3(-12.75,3.6,-5),Vector3(5.55,3.6,-5))
+	beam(Vector3(-17.5,3.45,-5),Vector3(8,3.45,-5),.25)
+	# Straight stair parallel to the front of the palace gallery.
+	flight(Vector3(-4.0,0,-4.1),Vector3.LEFT,20,.18,.48,1.6)
+	floorboards(Vector3(-14.4,3.6,-4.1),Vector2(3.04,1.95))
+	rail(Vector3(-15.92,3.6,-3.125),Vector3(-12.88,3.6,-3.125))
+	rail(Vector3(-15.92,3.6,-5.075),Vector3(-15.92,3.6,-3.125))
+	stair_routes.append({"start":Vector3(-3.35,.08,-4.1),"mid":Vector3(-8.5,1.9,-4.1),"turn":Vector3(-13.2,3.7,-4.1),"end":Vector3(-14.7,3.7,-4.1),"exit":Vector3(-14.7,3.7,-6.4)})
+	# Second straight stair runs along the west face of the tower, as marked in the image.
+	flight(Vector3(6.85,0,5.2),Vector3.FORWARD,20,.18,.48,1.6)
+	floorboards(Vector3(6.8,3.6,-4.95),Vector2(2.4,2.1))
+	rail(Vector3(5.6,3.6,-6),Vector3(5.6,3.6,-3.9))
+	rail(Vector3(7.95,3.6,-5),Vector3(7.95,3.6,-3.9))
+	stair_routes.append({"start":Vector3(6.85,.08,5.85),"mid":Vector3(6.85,1.9,.7),"turn":Vector3(6.85,3.7,-4),"end":Vector3(6.85,3.7,-4.8),"exit":Vector3(6.85,3.7,-6.5)})
+	tiled_plane(Vector3(-17.6,7.15,-8.3),Vector3(26.0,0,0),Vector3(0,-.70,4.95),true)
+	# Matching timber canopy covers the new tower-side stair without posts in its path.
+	tiled_plane(Vector3(5.65,6.75,-5.9),Vector3(2.6,0,0),Vector3(0,-3.1,11.8),true)
+	for z in [-3.8,.8,5.5]:
+		var h: float = 6.75-(z+5.9)/11.8*3.1
+		beam(Vector3(5.65,0,z),Vector3(5.65,h,z),.19,"beam",true)
+		beam(Vector3(5.65,h-.45,z),Vector3(6.35,h,z),.12)
 
 func defensive_walk() -> void:
-	floorboards(Vector3(-16.6,4.5,5.8),Vector2(1.8,21.6))
-	floorboards(Vector3(1.25,4.5,16.6),Vector2(37.5,1.8))
-	rail(Vector3(-15.65,4.5,-4.9),Vector3(-15.65,4.5,13.5))
-	rail(Vector3(-15.6,4.5,15.65),Vector3(13.1,4.5,15.65))
-	rail(Vector3(15.9,4.5,15.65),Vector3(17.35,4.5,15.65))
+	floorboards(Vector3(-16.6,3.6,4.6),Vector2(1.8,24.2))
+	floorboards(Vector3(1.25,3.6,16.6),Vector2(37.5,1.8))
+	rail(Vector3(-15.65,3.6,-4.9),Vector3(-15.65,3.6,13.5))
+	rail(Vector3(-15.6,3.6,15.65),Vector3(13.1,3.6,15.65))
+	rail(Vector3(15.9,3.6,15.65),Vector3(17.35,3.6,15.65))
 	for z in range(-4,17,3):
-		beam(Vector3(-17.6,4.37,z),Vector3(-15.65,4.37,z),.22)
-		beam(Vector3(-17.55,2.8,z),Vector3(-15.7,4.3,z),.20)
+		beam(Vector3(-17.6,3.47,z),Vector3(-15.65,3.47,z),.22)
+		beam(Vector3(-17.55,1.9,z),Vector3(-15.7,3.4,z),.20)
 	for x in range(-16,18,3):
-		beam(Vector3(x,4.37,17.55),Vector3(x,4.37,15.65),.22)
-		beam(Vector3(x,2.8,17.55),Vector3(x,4.3,15.7),.20)
-	# Independent stair from the yard and a continuous platform above the gate.
-	flight(Vector3(-5.0,0,14.5),Vector3.LEFT,25,.18,.36,1.65)
-	floorboards(Vector3(-15.0,4.5,14.5),Vector2(3.1,1.8))
-	rail(Vector3(-15.6,4.5,13.55),Vector3(-14,4.5,13.55))
-	stair_routes.append({"start":Vector3(-4.45,.08,14.5),"mid":Vector3(-14.7,4.6,14.5),"turn":Vector3(-16.5,4.6,14.5),"end":Vector3(-16.5,4.6,16.6),"exit":Vector3(-12.0,4.6,16.6)})
-	stone_floor(Vector3(18.75,4.5,-.25),Vector2(2.7,36.5))
-	stone_floor(Vector3(1.1,4.5,-18.75),Vector2(35.3,2.7))
-	rail(Vector3(17.35,4.5,-17.4),Vector3(17.35,4.5,-4.9))
-	rail(Vector3(17.35,4.5,-2.1),Vector3(17.35,4.5,15.65))
-	rail(Vector3(-16.55,4.5,-17.35),Vector3(17.35,4.5,-17.35))
-	rail(Vector3(-16.55,4.5,-20.1),Vector3(-16.55,4.5,-17.35))
-	wall_routes = [Vector3(-16.5,4.6,-4),Vector3(-16.5,4.6,16.6),Vector3(0,4.6,16.6),Vector3(18.75,4.6,16.6),Vector3(18.75,4.6,-18.75),Vector3(-15.7,4.6,-18.75)]
+		beam(Vector3(x,3.47,17.55),Vector3(x,3.47,15.65),.22)
+		beam(Vector3(x,1.9,17.55),Vector3(x,3.4,15.7),.20)
+	# The gate-side stair also runs parallel to its gallery.
+	flight(Vector3(-5.0,0,14.5),Vector3.LEFT,20,.18,.48,1.65)
+	floorboards(Vector3(-15.2,3.6,14.65),Vector2(2.6,2.3))
+	rail(Vector3(-15.6,3.6,13.5),Vector3(-14,3.6,13.5))
+	stair_routes.append({"start":Vector3(-4.45,.08,14.5),"mid":Vector3(-14.2,3.7,14.5),"turn":Vector3(-16.5,3.7,14.5),"end":Vector3(-16.5,3.7,16.6),"exit":Vector3(-12.0,3.7,16.6)})
+	stone_floor(Vector3(18.75,3.6,-.25),Vector2(2.7,36.5))
+	stone_floor(Vector3(1.1,3.6,-18.75),Vector2(35.3,2.7))
+	rail(Vector3(17.35,3.6,-17.4),Vector3(17.35,3.6,-4.9))
+	rail(Vector3(17.35,3.6,-2.1),Vector3(17.35,3.6,15.65))
+	rail(Vector3(-16.55,3.6,-17.35),Vector3(17.35,3.6,-17.35))
+	rail(Vector3(-16.55,3.6,-20.1),Vector3(-16.55,3.6,-17.35))
+	wall_routes = [Vector3(-16.5,3.7,-4),Vector3(-16.5,3.7,16.6),Vector3(0,3.7,16.6),Vector3(18.75,3.7,16.6),Vector3(18.75,3.7,-18.75),Vector3(-15.7,3.7,-18.75)]
 	rooms.append({"name":"Kamenný ochoz za věží","rect":Rect2(17.35,-20.1,2.7,37.6)})
 	rooms.append({"name":"Severní hradby","rect":Rect2(-16.55,-20.1,36.5,2.7)})
-	rooms.append({"name":"Obranný ochoz","rect":Rect2(-17.5,-5,1.9,22.5)})
+	rooms.append({"name":"Obranný ochoz","rect":Rect2(-17.5,-7.5,1.9,25)})
 	rooms.append({"name":"Ochoz nad bránou","rect":Rect2(-17.5,15.6,35,1.9)})
 
 func build_tower() -> void:
 	for y in [0.0,3.6,7.2,10.8]:
 		window_wall(Vector3(8,y,-3.5),9,3.6,[0.0],PI/2)
 		if y==3.6:
-			wall_piece(Vector3(17,4.05,-3.5),Vector3(9,.9,.6),PI/2)
-			wall(Vector3(17,4.5,-3.5),9,2.75,[0.0],["Východní hradby"],PI/2)
+			wall(Vector3(17,3.6,-3.5),9,3.6,[0.0],["Východní hradby"],PI/2)
 		else:
 			wall_piece(Vector3(17,y+1.8,-3.5),Vector3(9,3.6,.6),PI/2)
 		if y>=7.2:
@@ -647,11 +643,9 @@ func build_tower() -> void:
 			rail(Vector3(11.63,y+1.8,-7.76),Vector3(11.63,y+1.8,-4.94))
 			flight(Vector3(10.82,y+1.8,-5.22),Vector3.BACK,10,.18,.48,1.5)
 			stair_routes.append({"start":Vector3(9.12,y+.08,-.2),"mid":Vector3(9.12,y+1.9,-6.05),"turn":Vector3(10.82,y+1.9,-6.05),"end":Vector3(10.82,y+3.7,-.35),"exit":Vector3(14,y+3.7,-.35)})
-	flight(Vector3(13.9,3.6,-3.5),Vector3.RIGHT,5,.18,.4,1.6)
-	floorboards(Vector3(16.55,4.5,-3.5),Vector2(1.9,2.7))
+	floorboards(Vector3(16.55,3.6,-3.5),Vector2(1.9,2.7))
 	for z in [-4.85,-2.15]:
-		rail(Vector3(15.6,4.5,z),Vector3(16.7,4.5,z))
-	stair_routes.append({"start":Vector3(13.3,3.68,-3.5),"mid":Vector3(15.0,4.14,-3.5),"turn":Vector3(16.25,4.6,-3.5),"end":Vector3(16.25,4.6,-3.5),"exit":Vector3(16.25,4.6,-3.5)})
+		rail(Vector3(15.6,3.6,z),Vector3(16.7,3.6,z))
 	floorboards(Vector3(12.5,14.4,-3.5),Vector2(9,9))
 	hip_roof(Vector3(12.5,14.45,-3.5),Vector2(10,10),3.2)
 	rooms.append({"name":"Věž","rect":Rect2(8,-8,9,9)})
