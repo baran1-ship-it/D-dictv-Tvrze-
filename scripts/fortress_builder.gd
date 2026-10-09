@@ -1,6 +1,10 @@
 extends Node3D
 const Door = preload("res://scripts/fortress_door.gd")
 const Construction = preload("res://scripts/construction_mesh.gd")
+const Scanned = preload("res://scripts/scanned_surface.gd")
+var heights: Dictionary = {}
+var relief_cells := 0
+var roof_cells := 0
 var mats: Dictionary = {}
 var batches: Dictionary = {}
 var mesh_cache: Dictionary = {}
@@ -12,8 +16,6 @@ var stair_routes: Array = []
 var wall_routes: Array = []
 var roof_normals: Array[Vector3] = []
 var windows: Array = []
-var stone_count := 0
-var tile_count := 0
 var rng := RandomNumberGenerator.new()
 
 func build() -> void:
@@ -139,23 +141,37 @@ func textured(path: String, scale: float, tint: Color, triplanar := true) -> Sta
 	mat.normal_scale = .18
 	return mat
 
+func pbr(asset: String, tint := Color.WHITE) -> StandardMaterial3D:
+	var material := plain(tint)
+	var prefix := "res://assets/materials/pbr/"+asset
+	material.albedo_texture = load(prefix+"_diff.jpg")
+	material.normal_enabled = true
+	material.normal_texture = load(prefix+"_normal.jpg")
+	material.normal_scale = .45
+	material.roughness_texture = load(prefix+"_rough.jpg")
+	material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	material.ao_enabled = true
+	material.ao_texture = load(prefix+"_ao.jpg")
+	material.ao_light_affect = .35
+	var image := (load(prefix+"_height.jpg") as Texture2D).get_image()
+	if image.is_compressed():
+		image.decompress()
+	heights[asset] = image
+	return material
+
 func make_materials() -> void:
 	mats.stone = textured("res://assets/materials/rock.jpg",.9,Color("a49f91"))
-	mats.trim = plain(Color("b5ac96"))
+	mats.trim = textured("res://assets/materials/rock.jpg",1.4,Color("d4c4a5"))
+	mats.trim.normal_enabled = false
+	mats.rubble = pbr("stone_wall")
+	mats.paving = pbr("cobblestone_floor_04")
+	mats.roofscan = pbr("roof_09",Color("fff0d8"))
+	mats.rubble_edge = mats.rubble.duplicate()
+	mats.rubble_edge.uv1_triplanar = true
+	mats.rubble_edge.uv1_world_triplanar = true
+	mats.rubble_edge.uv1_scale = Vector3.ONE*.5
 	mats.mortar = plain(Color("5b5548"))
-	mats.plaster = plain(Color("c8bda4"))
-	var noise := FastNoiseLite.new()
-	noise.frequency = .11
-	noise.seed = 1403
-	var plaster_normal := NoiseTexture2D.new()
-	plaster_normal.width = 128
-	plaster_normal.height = 128
-	plaster_normal.noise = noise
-	plaster_normal.as_normal_map = true
-	plaster_normal.bump_strength = .2
-	mats.plaster.normal_enabled = true
-	mats.plaster.normal_texture = plaster_normal
-	mats.plaster.normal_scale = .12
+	mats.plaster = pbr("plastered_wall",Color("e8ddc5"))
 	var ends := Image.create(128,128,false,Image.FORMAT_RGB8)
 	for y in range(128):
 		for x in range(128):
@@ -182,18 +198,7 @@ func make_materials() -> void:
 	mats.flame = plain(Color("e8a954"))
 	mats.flame.emission_enabled = true
 	mats.flame.emission = Color("ecb66a")
-	for i in range(6):
-		mats["rock"+str(i)] = mats.stone.duplicate()
-		mats["rock"+str(i)].albedo_color = Color("a49f91")*(.86+i*.045)
-		mats["rock"+str(i)].uv1_scale = Vector3.ONE*2.2
-		mats["cobble"+str(i)] = mats.stone.duplicate()
-		mats["cobble"+str(i)].albedo_color = Color("858579")*(.77+i*.075)
-		mats["tile"+str(i)] = mats.stone.duplicate()
-		mats["tile"+str(i)].albedo_color = Color("925c41")*(.78+i*.07)
-		mats["tile"+str(i)].normal_scale = .08
-		mesh_cache["rock"+str(i)] = Construction.block(Vector3.ONE,.12+i*.009,false,Vector2.ZERO,.055,1403+i)
-		mesh_cache["cobble"+str(i)] = Construction.block(Vector3.ONE,.17+i*.008,false,Vector2.ZERO,.04,2403+i)
-		mesh_cache["tile"+str(i)] = Construction.block(Vector3(.39,.055,.53),.02)
+	mats.tile3 = plain(Color("8f4c34"),.95)
 
 func batch(mesh: Mesh, transform: Transform3D, material_id: String) -> void:
 	if mesh_cache.has(material_id) and mesh==mesh_cache[material_id]:
@@ -269,46 +274,23 @@ func floorboards(pos: Vector3, size: Vector2) -> void:
 			timber(Vector3(x,pos.y-.045,pos.z-size.y/2+(j+.5)*length),Vector3(width-.009,length-.012,.09),false,"wood",Vector3.FORWARD)
 
 func courtyard() -> void:
-	for z in range(76):
-		for x in range(76):
-			var px := -17.75+x*.47+(0.22 if z%2 else 0.0)
-			var pz := -17.75+z*.47
-			if px>17.6:
-				continue
-			var id := "cobble"+str(rng.randi_range(0,5))
-			var scale := Vector3(rng.randf_range(.44,.46),rng.randf_range(.075,.10),rng.randf_range(.44,.46))
-			var basis := Basis(Vector3.UP,rng.randf_range(-.08,.08)).scaled_local(scale)
-			batch(mesh_cache[id],Transform3D(basis,Vector3(px,rng.randf_range(-.026,-.018),pz)),id)
-			stone_count += 1
-	# A shallow drain is visible, while the movement surface stays smooth.
-	for z in range(-16,17):
-		box(Vector3(6.5,-.002,z),Vector3(.1,.018,.94),"mortar")
-	for i in range(40):
-		var z := rng.randf_range(-4,16)
-		box(Vector3(-17.5,.025,z),Vector3(.16,.015,rng.randf_range(.18,.5)),"moss")
+	var relief := Scanned.make(Vector3(-18,-.005,-18),Vector3.RIGHT,Vector3.BACK,Vector3.UP,Vector2(36,36),heights.cobblestone_floor_04,1.5,.045,.08)
+	batch(relief.mesh,Transform3D.IDENTITY,"paving")
+	relief_cells += relief.cells
 
 func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 	var basis := Basis(Vector3.UP,angle)
 	var mesh := BoxMesh.new()
 	mesh.size = size
-	batch(mesh,Transform3D(basis,pos),"mortar")
+	batch(mesh,Transform3D(basis,pos),"rubble_edge")
 	collision(Transform3D(basis,pos),size)
-	# Rubble relief on both faces of structural masonry; stones project from joints.
-	var rows := maxi(1,int(ceil(size.y/.43)))
-	var h := size.y/rows
-	for row in range(rows):
-		var start := -size.x/2
-		while start<size.x/2-.015:
-			var w := minf(rng.randf_range(.48,.85),size.x/2-start)
-			var id := "rock"+str(rng.randi_range(0,5))
-			for side in [-1,1]:
-				var depth := rng.randf_range(.10,.16)
-				var offset := Vector3(start+w/2,-size.y/2+(row+.5)*h,side*(size.z/2+.015))
-				offset.y += rng.randf_range(-.018,.018)
-				var scale := Vector3(maxf(.02,w-.022),maxf(.02,h-.028+rng.randf_range(-.035,.015)),depth)
-				batch(mesh_cache[id],Transform3D(basis.scaled_local(scale),pos+basis*offset),id)
-				stone_count += 1
-			start += w
+	# One scanned rubble surface: diffuse/normal/height share coordinates.
+	for side in [-1,1]:
+		var normal: Vector3 = basis.z*side
+		var origin := pos+basis*Vector3(-size.x*.5,-size.y*.5,side*(size.z*.5+.016))
+		var relief := Scanned.make(origin,basis.x,Vector3.UP,normal,Vector2(size.x,size.y),heights.stone_wall,2,.085,.08)
+		batch(relief.mesh,Transform3D.IDENTITY,"rubble")
+		relief_cells += relief.cells
 
 func wall(pos: Vector3, width: float, height: float, centers: Array, titles: Array, angle := 0.0) -> void:
 	var basis := Basis(Vector3.UP,angle)
@@ -384,20 +366,15 @@ func tiled_plane(origin: Vector3, across: Vector3, slope: Vector3) -> void:
 		a = -a
 		normal = -normal
 	roof_normals.append(normal)
-	var basis := Basis(a.normalized(),normal,slope.normalized())
-	var sheet := SurfaceTool.new()
-	sheet.begin(Mesh.PRIMITIVE_TRIANGLES)
-	Construction.quad(sheet,[start,start+a,start+a+slope,start+slope],normal)
-	sheet.index()
-	batch(sheet.commit(),Transform3D.IDENTITY,"tile0")
+	var relief := Scanned.make(start,a.normalized(),slope.normalized(),normal,Vector2(a.length(),slope.length()),heights.roof_09,1.2,.045,.065)
+	batch(relief.mesh,Transform3D.IDENTITY,"roofscan")
+	roof_cells += relief.cells
+	var underside := SurfaceTool.new()
+	underside.begin(Mesh.PRIMITIVE_TRIANGLES)
+	Construction.quad(underside,[start-normal*.055,start+a-normal*.055,start+a+slope-normal*.055,start+slope-normal*.055],-normal,Vector2(a.length()*.5,slope.length()*.5))
+	underside.index()
+	batch(underside.commit(),Transform3D.IDENTITY,"wood")
 	var columns := int(ceil(a.length()/.37))
-	var rows := int(ceil(slope.length()/.39))
-	for row in range(rows):
-		for column in range(columns):
-			var id := "tile"+str(rng.randi_range(0,5))
-			var p := start+a.normalized()*((column+.5)*a.length()/columns)+slope.normalized()*((row+.5)*slope.length()/rows)+normal*(.032+(row%2)*.002)
-			batch(mesh_cache[id],Transform3D(basis,p),id)
-			tile_count += 1
 	beam(start,start+a,.19)
 	for column in range(0,columns,5):
 		var p := start+a.normalized()*(column*a.length()/columns)-normal*.1
@@ -419,32 +396,32 @@ func roof(pos: Vector3, size: Vector2, rise: float, along_x: bool) -> void:
 			gable([pos+Vector3(-w,0,z),pos+Vector3(0,rise,z),pos+Vector3(w,0,z)],Vector3(0,0,signf(z)))
 		beam(pos+Vector3(0,rise+.07,-d),pos+Vector3(0,rise+.07,d),.17,"tile3")
 
+func hip_roof(pos: Vector3, size: Vector2, rise: float) -> void:
+	var w := size.x*.5
+	var d := size.y*.5
+	var corners := [Vector3(-w,0,-d),Vector3(-w,0,d),Vector3(w,0,d),Vector3(w,0,-d)]
+	var peak := pos+Vector3(0,rise,0)
+	for i in range(4):
+		var a: Vector3 = pos+corners[i]
+		var b: Vector3 = pos+corners[(i+1)%4]
+		var u := (b-a).normalized()
+		var climb := peak-(a+b)*.5
+		var v := climb.normalized()
+		var normal := u.cross(v).normalized()
+		roof_normals.append(normal)
+		var relief := Scanned.make(a,u,v,normal,Vector2(a.distance_to(b),climb.length()),heights.roof_09,1.2,.045,.065,true)
+		batch(relief.mesh,Transform3D.IDENTITY,"roofscan")
+		roof_cells += relief.cells
+		beam(a,b,.19)
+		beam(a+Vector3.UP*.04,peak+Vector3.UP*.04,.12,"tile3")
+
 func gable(points: Array, normal: Vector3) -> void:
-	var s := SurfaceTool.new()
-	s.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in [0,2,1]:
-		s.set_normal(normal)
-		s.set_uv(Vector2(points[i].x,points[i].y))
-		s.add_vertex(points[i])
-	s.index()
-	batch(s.commit(),Transform3D.IDENTITY,"mortar")
-	var center: Vector3 = (points[0]+points[2])*.5
-	var axis: Vector3 = (points[2]-points[0]).normalized()
-	var width: float = points[0].distance_to(points[2])
-	var rise: float = points[1].y-center.y
-	var rows := int(ceil(rise/.43))
-	var h := rise/rows
-	var basis := Basis(axis,Vector3.UP,axis.cross(Vector3.UP))
-	for row in range(rows):
-		var half := width*.5*(1-(row+1.0)*h/rise)
-		var x := -half
-		while x<half-.02:
-			var w := minf(.68,half-x)
-			var id := "rock"+str(rng.randi_range(0,5))
-			for side in [-1,1]:
-				var p: Vector3 = center+axis*(x+w/2)+Vector3(0,(row+.5)*h,0)+normal*side*.025
-				batch(mesh_cache[id],Transform3D(basis.scaled_local(Vector3(maxf(.02,w-.02),h-.03,.13)),p),id)
-			x += w
+	var base: Vector3 = points[0]
+	var axis: Vector3 = (points[2]-base).normalized()
+	var center: Vector3 = (points[2]+base)*.5
+	var relief := Scanned.make(base,axis,Vector3.UP,normal,Vector2(base.distance_to(points[2]),points[1].y-center.y),heights.stone_wall,2,.055,.08,true)
+	batch(relief.mesh,Transform3D.IDENTITY,"rubble")
+	relief_cells += relief.cells
 
 func rail(a: Vector3, b: Vector3, opening := false) -> void:
 	var count := int(ceil(a.distance_to(b)/.32))
@@ -482,7 +459,7 @@ func flight(first: Vector3, direction: Vector3, count: int, rise: float, run: fl
 func gallery() -> void:
 	floorboards(Vector3(-1.2,3.6,-6.5),Vector2(18.4,3))
 	for x in [-10.0,-7.0,-4.0,-1.0,2.0,5.0,8.0]:
-		beam(Vector3(x,0,-5),Vector3(x,6.7,-5),.23)
+		beam(Vector3(x,0,-5),Vector3(x,6.7,-5),.23,"beam",true)
 		beam(Vector3(x,5.8,-5),Vector3(x,6.8,-6.5),.15)
 		beam(Vector3(x,2.5,-5),Vector3(x,3.48,-6.4),.17)
 		if x<8:
@@ -493,8 +470,8 @@ func gallery() -> void:
 	floorboards(Vector3(-15.6,1.8,-5.5),Vector2(1.4,2.7))
 	flight(Vector3(-14.92,1.8,-6.5),Vector3.RIGHT,10,.18,.48,1.6)
 	for z in [-6.7,-4.3]:
-		beam(Vector3(-16.2,0,z),Vector3(-16.2,6.8,z),.23)
-		beam(Vector3(-16.2,1.3,z),Vector3(-15.0,1.73,z),.16)
+		beam(Vector3(-17.05,0,z),Vector3(-17.05,6.8,z),.23,"beam",true)
+		beam(Vector3(-17.05,1.3,z),Vector3(-15.0,1.73,z),.16)
 	rail(Vector3(-16.3,1.8,-6.85),Vector3(-16.3,1.8,-4.15))
 	rail(Vector3(-16.3,1.8,-4.15),Vector3(-14.9,1.8,-4.15))
 	floorboards(Vector3(-15.9,3.6,-7.6),Vector2(2.7,.8))
@@ -510,7 +487,8 @@ func defensive_walk() -> void:
 	floorboards(Vector3(-16.6,4.5,5.8),Vector2(1.8,21.6))
 	floorboards(Vector3(0,4.5,16.6),Vector2(35,1.8))
 	rail(Vector3(-15.65,4.5,-4.9),Vector3(-15.65,4.5,13.5))
-	rail(Vector3(-15.6,4.5,15.65),Vector3(17.2,4.5,15.65))
+	rail(Vector3(-15.6,4.5,15.65),Vector3(13.1,4.5,15.65))
+	rail(Vector3(15.9,4.5,15.65),Vector3(17.2,4.5,15.65))
 	for z in range(-4,17,3):
 		beam(Vector3(-17.6,4.37,z),Vector3(-15.65,4.37,z),.22)
 		beam(Vector3(-17.55,2.8,z),Vector3(-15.7,4.3,z),.20)
@@ -539,13 +517,14 @@ func build_tower() -> void:
 		if floor>0:
 			floorboards(Vector3(14.15,y,-3.5),Vector2(5.05,8.2))
 			floorboards(Vector3(10.1,y,-.35),Vector2(3.8,1.1))
+			rail(Vector3(11.68,y,-7.5),Vector3(11.68,y,-.95))
 		if floor<3:
 			flight(Vector3(9.12,y,-.9),Vector3.FORWARD,10,.18,.48,1.5)
 			floorboards(Vector3(9.95,y+1.8,-6.05),Vector2(3.25,1.2))
 			flight(Vector3(10.82,y+1.8,-5.22),Vector3.BACK,10,.18,.48,1.5)
 			stair_routes.append({"start":Vector3(9.12,y+.08,-.2),"mid":Vector3(9.12,y+1.9,-6.05),"turn":Vector3(10.82,y+1.9,-6.05),"end":Vector3(10.82,y+3.7,-.35),"exit":Vector3(14,y+3.7,-.35)})
 	floorboards(Vector3(12.5,14.4,-3.5),Vector2(9,9))
-	roof(Vector3(12.5,14.45,-3.5),Vector2(10,10),3.2,false)
+	hip_roof(Vector3(12.5,14.45,-3.5),Vector2(10,10),3.2)
 	rooms.append({"name":"Věž","rect":Rect2(8,-8,9,9)})
 
 func details() -> void:

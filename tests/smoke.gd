@@ -90,8 +90,8 @@ func run() -> void:
 	check(not door.opened,"door should be closed")
 	check(game.player.test_move(game.player.transform,Vector3(0,0,2)),"closed door should block movement")
 	check(game.world.windows.size()>20,"windows should be actual framed openings")
-	check(game.world.stone_count>10000,"masonry and paving must have geometric relief")
-	check(game.world.tile_count>3000,"roof slopes must have separate overlapping tiles")
+	check(game.world.relief_cells>10000,"masonry and paving must have geometric relief")
+	check(game.world.roof_cells>3000,"roof slopes must have physically displaced scanned tiles")
 	for normal in game.world.roof_normals:
 		check(normal.y>0,"all roof faces must point out and upward")
 	for d in game.world.doors:
@@ -119,6 +119,21 @@ func run() -> void:
 		if not passed:
 			print("Wall failure: player=",game.player.position," target=",point)
 		check(passed,"wall walk must connect through courtyard corners and across gate")
+	# Walk through the complete upper doorway, including its outer railing gap.
+	for d in game.world.doors:
+		if d.title not in ["Přístup na hradby","Obranný ochoz"]:
+			continue
+		game.player.position = d.to_global(Vector3(0,.1,-.65))
+		game.player.velocity = Vector3.ZERO
+		for frame in range(8):
+			await physics_frame
+		check(d.toggle(game.player.global_position),"upper access door must open")
+		await create_timer(.8).timeout
+		var distance := .95 if d.title=="Přístup na hradby" else .5
+		check(await walk_to(d.to_global(Vector3(0,.1,distance))),"upper doorway and railing gap must be traversable: "+d.title)
+		check(await walk_to(d.to_global(Vector3(0,.1,-1.0))),"upper doorway must work in reverse: "+d.title)
+		check(d.toggle(game.player.global_position),"upper access door must close")
+		await create_timer(.8).timeout
 	# Check every threshold has support on both sides, and no overhead collision.
 	for d in game.world.doors:
 		for side in [-1,1]:

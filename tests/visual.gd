@@ -28,7 +28,7 @@ func run() -> void:
 	await create_timer(.29).timeout
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://build/door-hand.png")
-	print("GEOMETRY: masonry/paving=",game.world.stone_count," roof tiles=",game.world.tile_count," draw calls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+	print("GEOMETRY: masonry/paving mesh cells=",game.world.relief_cells," roof mesh cells=",game.world.roof_cells," draw calls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	game.queue_free()
 	await process_frame
 	quit()

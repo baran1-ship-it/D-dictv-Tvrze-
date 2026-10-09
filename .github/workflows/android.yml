@@ -43,6 +43,8 @@ jobs:
           mkdir -p "$XDG_DATA_HOME/godot/export_templates/${GODOT_VERSION}.stable"
           unzip -q /tmp/templates.zip -d /tmp/export-templates
           cp /tmp/export-templates/templates/* "$XDG_DATA_HOME/godot/export_templates/${GODOT_VERSION}.stable/"
+      - name: Fetch locked CC0 PBR materials
+        run: python3 tools/fetch_materials.py
       - name: Import and test project
         run: |
           set -euo pipefail
