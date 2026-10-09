@@ -383,27 +383,66 @@ func attic_roof() -> void:
 	for x in [8.0,17.0]: wall_piece(Vector3(x,15.96,-3.5),Vector3(9,2.68,.6),PI/2)
 	for z in [-8.0,1.0]: wall_piece(Vector3(12.5,15.96,z),Vector3(9,2.68,.6))
 	hip_roof(Vector3(12.5,base,-3.5),Vector2(10,10),4.5)
-	var peak := Vector3(12.5,base+4.5,-3.5)
-	# Hip rafters and common rafters seat on continuous wall plates.
-	for z in [-7.7,.7]: beam(Vector3(8.25,base-.14,z),Vector3(16.75,base-.14,z),.28,"beam",true,false)
-	for x in [8.3,16.7]: beam(Vector3(x,base-.14,-7.7),Vector3(x,base-.14,.7),.28,"beam",true,false)
+	var peak := Vector3(12.5,base+4.32,-3.5)
+	var plate := base+.54
+	attic_wall_closure(base)
+	# Common and jack rafters end at the hip rafters, rather than all meeting the peak.
+	for z in [-7.7,.7]: beam(Vector3(8.25,plate,z),Vector3(16.75,plate,z),.28,"beam",true,false)
+	for x in [8.3,16.7]: beam(Vector3(x,plate,-7.7),Vector3(x,plate,.7),.28,"beam",true,false)
+	for x in [8.3,16.7]:
+		for z in [-7.7,.7]: beam(Vector3(x,plate,z),peak,.24,"beam",true,false)
 	for t in range(1,8):
 		var q := 8.3+t*1.05
-		for z in [-7.7,.7]: beam(Vector3(q,base,z),peak,.18,"beam",true,false)
+		var distance := absf(q-12.5)
+		for side in [-1,1]:
+			beam(Vector3(q,plate,-3.5+side*4.2),Vector3(q,peak.y-distance*.9,-3.5+side*distance),.18,"beam",true,false)
 		var qz := -7.7+t*1.05
-		for x in [8.3,16.7]: beam(Vector3(x,base,qz),peak,.18,"beam",true,false)
+		var distance_z := absf(qz+3.5)
+		for side in [-1,1]:
+			beam(Vector3(12.5+side*4.2,plate,qz),Vector3(12.5+side*distance_z,peak.y-distance_z*.9,qz),.18,"beam",true,false)
 	for z in [-6.65,-3.5,-.35]:
 		beam(Vector3(8.35,base-.02,z),Vector3(16.65,base-.02,z),.28,"beam",true,false)
-		for x in [9.1,15.9]:
-			beam(Vector3(x,base,z),Vector3(x+(.55 if x<12.5 else -.55),base+.9,z),.18,"beam",true,false)
+		if z==-3.5:
+			beam(Vector3(12.5,base,z),peak,.24,"beam",true,false)
+			for x in [9.1,15.9]:
+				beam(Vector3(x,base,z),Vector3(10.3 if x<12.5 else 14.7,base+2.25,z),.18,"beam",true,false)
 	# Purlins tie neighbouring rafters together above head height.
 	for x in [10.3,14.7]: beam(Vector3(x,base+2.25,-5.7),Vector3(x,base+2.25,-1.3),.22,"beam",true,false)
+	for z in [-5.7,-1.3]: beam(Vector3(10.3,base+2.25,z),Vector3(14.7,base+2.25,z),.22,"beam",true,false)
 	rail(Vector3(11.55,ATTIC_Y,-7.65),Vector3(11.55,ATTIC_Y,-1.2))
 	var light := OmniLight3D.new()
 	light.position = Vector3(13,ATTIC_Y+2,-3.5)
 	light.light_energy = .55
 	light.omni_range = 12
 	add_child(light)
+
+func attic_wall_closure(base: float) -> void:
+	# Wedge-shaped wall caps follow the underside of the hip roof, including corners.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for rect in [Rect2(7.7,-8.3,.6,9.6),Rect2(16.7,-8.3,.6,9.6),Rect2(8.3,-8.3,8.4,.6),Rect2(8.3,.7,8.4,.6)]:
+		var p: Array = []
+		for offset in [Vector2.ZERO,Vector2(rect.size.x,0),rect.size,Vector2(0,rect.size.y)]:
+			var q: Vector2 = rect.position+offset
+			p.append(Vector3(q.x,base-.02,q.y))
+		for i in range(4):
+			var point: Vector3 = p[i]
+			point.y = base+4.5*(1-maxf(absf(point.x-12.5),absf(point.z+3.5))/5.0)-.07
+			p.append(point)
+		for side in range(4):
+			var next := (side+1)%4
+			var normal: Vector3 = (p[next]-p[side]).cross(Vector3.UP).normalized()
+			Construction.quad(surface,[p[side],p[next],p[next+4],p[side+4]],normal)
+		Construction.quad(surface,[p[4],p[5],p[6],p[7]],Vector3.UP)
+	surface.index()
+	var mesh := surface.commit()
+	batch(mesh,Transform3D.IDENTITY,"trim")
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(mesh.get_faces())
+	shape.backface_collision = true
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	static_body.add_child(collider)
 
 func cylinder(pos: Vector3, top: float, bottom: float, height: float, material_id: String, sides := 12) -> void:
 	var mesh := CylinderMesh.new()

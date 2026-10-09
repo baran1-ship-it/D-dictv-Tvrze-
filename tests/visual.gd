@@ -30,6 +30,7 @@ func run() -> void:
 	await shot("tower-stair-ceiling.png",Vector3(9.1,8.36,-.35),0,.55)
 	await shot("attic-access.png",Vector3(10.82,14.0,-2.3),PI,.4)
 	await shot("attic-roof.png",Vector3(14.4,15.01,-.35),.3,.72)
+	await shot("attic-room.png",Vector3(15.8,15.01,-.35),.6,.24)
 	await shot("attic-floor.png",Vector3(15.9,15.01,-6.7),2.55,-.35)
 	await shot("wooden-ceiling.png",Vector3(12.5,5.1,8),.3,.8)
 	await shot("ordinary-jamb.png",Vector3(-8.2,.1,-6.8),.32,.52)
