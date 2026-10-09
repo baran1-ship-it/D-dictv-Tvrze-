@@ -98,13 +98,6 @@ jobs:
           path: |
             build/dedictvi-tvrze.apk
             build/SHA256SUMS.txt
-            build/courtyard.png
-            build/door-hand.png
-            build/east-wing.png
-            build/roof-detail.png
-            build/wall-walk.png
-            build/tower-stairs.png
-            build/south-door.png
-            build/gallery-access.png
+            build/*.png
           if-no-files-found: error
           retention-days: 14

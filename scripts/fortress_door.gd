@@ -9,6 +9,7 @@ var busy := false
 var title := "Dveře"
 var width := 2.1
 var height := 2.65
+var opening_side := 0.0
 
 func configure(wood: Material, iron: Material, door_title: String) -> void:
 	title = door_title
@@ -91,11 +92,11 @@ func toggle(player_position: Vector3) -> bool:
 	if opened and blocked_by(player_position):
 		return false
 	busy = true
-	var side := 1.0 if to_local(player_position).z >= 0 else -1.0
+	var side := opening_side if opening_side!=0 else (1.0 if to_local(player_position).z >= 0 else -1.0)
 	opened = not opened
 	collider.set_deferred("disabled", true)
 	var tween := create_tween()
-	tween.tween_property(pivot, "rotation:y", side * PI * 0.52 if opened else 0.0, 0.65).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(pivot, "rotation:y", side * PI * 0.49 if opened else 0.0, 0.65).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_callback(func():
 		collider.set_deferred("disabled", false)
 		busy = false)

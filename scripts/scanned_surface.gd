@@ -13,7 +13,7 @@ static func sample_height(img: Image, uv: Vector2) -> float:
 	var d := img.get_pixel((ix+1)%img.get_width(),(iy+1)%img.get_height()).r
 	return lerpf(lerpf(a,b,x-floorf(x)),lerpf(c,d,x-floorf(x)),y-floorf(y))
 
-static func make(origin: Vector3, axis_u: Vector3, axis_v: Vector3, normal: Vector3, size: Vector2, image: Image, period: float, depth: float, spacing: float, triangle := false) -> Dictionary:
+static func make(origin: Vector3, axis_u: Vector3, axis_v: Vector3, normal: Vector3, size: Vector2, image: Image, period: float, depth: float, spacing: float, triangle := false, phase := Vector2.ZERO) -> Dictionary:
 	var nx := maxi(1,int(ceil(size.x/spacing)))
 	var ny := maxi(1,int(ceil(size.y/spacing)))
 	var points := PackedVector3Array()
@@ -27,7 +27,7 @@ static func make(origin: Vector3, axis_u: Vector3, axis_v: Vector3, normal: Vect
 			if triangle:
 				u = size.x*.5+(u-size.x*.5)*(1.0-v/size.y)
 			var base := origin+axis_u*u+axis_v*v
-			var uv := Vector2(base.dot(axis_u),-base.dot(axis_v))/period
+			var uv := Vector2(base.dot(axis_u),-base.dot(axis_v))/period+phase
 			var h := sample_height(image,uv)
 			var hu := (sample_height(image,uv+Vector2(eps/period,0))-sample_height(image,uv-Vector2(eps/period,0)))*depth/(2*eps)
 			var hv := (sample_height(image,uv-Vector2(0,eps/period))-sample_height(image,uv+Vector2(0,eps/period)))*depth/(2*eps)

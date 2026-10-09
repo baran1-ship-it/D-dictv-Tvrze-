@@ -102,56 +102,6 @@
       "sha256": "fdef7f183b479da3863ce098b6d03a84d4cb14878a62f854542c9ddf7271dc2e"
     },
     {
-      "path": "assets/materials/pbr/roof_09_diff.jpg",
-      "asset": "roof_09",
-      "map": "Diffuse",
-      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/roof_09/roof_09_diff_1k.jpg",
-      "md5": "b9ab9e6b8ae7c83e19efaea6442511e7",
-      "license": "CC0-1.0",
-      "source": "https://polyhaven.com/a/roof_09",
-      "sha256": "6baaf5dca30d14566791ad6603e3b3dbd69b76990fd8d1314efc35dd2655e818"
-    },
-    {
-      "path": "assets/materials/pbr/roof_09_normal.jpg",
-      "asset": "roof_09",
-      "map": "nor_gl",
-      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/roof_09/roof_09_nor_gl_1k.jpg",
-      "md5": "a97decabde63b9ab0671563231c6850f",
-      "license": "CC0-1.0",
-      "source": "https://polyhaven.com/a/roof_09",
-      "sha256": "60fc61343316bbe73399cdddfb3da8b47d41c2d147e2b3384f244f8be9ed1668"
-    },
-    {
-      "path": "assets/materials/pbr/roof_09_rough.jpg",
-      "asset": "roof_09",
-      "map": "Rough",
-      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/roof_09/roof_09_rough_1k.jpg",
-      "md5": "714cce88275374d9fa3b9823ad486e1d",
-      "license": "CC0-1.0",
-      "source": "https://polyhaven.com/a/roof_09",
-      "sha256": "82ebb728f9e128202b9f03f2be4589331c02517a86b6921002af203b20fef124"
-    },
-    {
-      "path": "assets/materials/pbr/roof_09_height.jpg",
-      "asset": "roof_09",
-      "map": "Displacement",
-      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/roof_09/roof_09_disp_1k.jpg",
-      "md5": "efb1672116ec281e8bab037253577b0b",
-      "license": "CC0-1.0",
-      "source": "https://polyhaven.com/a/roof_09",
-      "sha256": "a1a54908bb4d6f38128eafaeabcdd15efd5a0b905aa8409a956c2e51872f6aad"
-    },
-    {
-      "path": "assets/materials/pbr/roof_09_ao.jpg",
-      "asset": "roof_09",
-      "map": "AO",
-      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/roof_09/roof_09_ao_1k.jpg",
-      "md5": "d4695ef0e1e84017d99a6a3300c9425c",
-      "license": "CC0-1.0",
-      "source": "https://polyhaven.com/a/roof_09",
-      "sha256": "081bab7e0a772cecc9dba0ab71ebf98a9e0f72465e150ccc7ce885980a61bc38"
-    },
-    {
       "path": "assets/materials/pbr/plastered_wall_diff.jpg",
       "asset": "plastered_wall",
       "map": "Diffuse",
@@ -200,6 +150,106 @@
       "license": "CC0-1.0",
       "source": "https://polyhaven.com/a/plastered_wall",
       "sha256": "4de5314eb6d3a22c70e4ceff8886dce05bba404e11e196b95ef170fdd4057ae6"
+    },
+    {
+      "path": "assets/materials/pbr/rock_face_03_diff.jpg",
+      "asset": "rock_face_03",
+      "map": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_face_03/rock_face_03_diff_1k.jpg",
+      "md5": "e4c34abb1aad5befe12754fad507147a",
+      "sha256": "ea48e0e47ad42c8bd312476178b1248ec66f0eb19156a26a1c222f2a40caaf2d",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/rock_face_03"
+    },
+    {
+      "path": "assets/materials/pbr/rock_face_03_normal.jpg",
+      "asset": "rock_face_03",
+      "map": "nor_gl",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_face_03/rock_face_03_nor_gl_1k.jpg",
+      "md5": "cbd30858439ece391480c5e67e09de89",
+      "sha256": "c6423169583f31715cf0636954bad524e806848a5f2861fcea6794275f726ff0",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/rock_face_03"
+    },
+    {
+      "path": "assets/materials/pbr/rock_face_03_rough.jpg",
+      "asset": "rock_face_03",
+      "map": "Rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_face_03/rock_face_03_rough_1k.jpg",
+      "md5": "bbb2c7dafde3f81808fa7404d4527a56",
+      "sha256": "9e3d9a2fd75244892e7acb6bab2eaed1279299510a7970672c0ee27ff1c19fea",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/rock_face_03"
+    },
+    {
+      "path": "assets/materials/pbr/rock_face_03_height.jpg",
+      "asset": "rock_face_03",
+      "map": "Displacement",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_face_03/rock_face_03_disp_1k.jpg",
+      "md5": "9d51d6b2496de79f97b80d43ff1dd7fb",
+      "sha256": "fb053bfd46cef976da9cfee67f045367469cddd69469dcacd67d3fca4bd41545",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/rock_face_03"
+    },
+    {
+      "path": "assets/materials/pbr/rock_face_03_ao.jpg",
+      "asset": "rock_face_03",
+      "map": "AO",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_face_03/rock_face_03_ao_1k.jpg",
+      "md5": "07e0ca4b418800f288cc1d0740c3b254",
+      "sha256": "be3536db0cf69c950fff97a196310f486cef8b23d16e6eb48743a58fadef0917",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/rock_face_03"
+    },
+    {
+      "path": "assets/materials/pbr/roof_planks_diff.jpg",
+      "asset": "roof_planks",
+      "map": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/roof_planks/roof_planks_diff_1k.jpg",
+      "md5": "5974b88403aa1b35fca528936ef9ce63",
+      "sha256": "707666b21699215611bb55e8bcc919e607f58c049202f0fd700d334c59e0bddc",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/roof_planks"
+    },
+    {
+      "path": "assets/materials/pbr/roof_planks_normal.jpg",
+      "asset": "roof_planks",
+      "map": "nor_gl",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/roof_planks/roof_planks_nor_gl_1k.jpg",
+      "md5": "8f60e3f4aa04181d4f199df4618cd3d0",
+      "sha256": "6a1b2e7c2fc73e4ad049207b0d8bd83304ad019f6a4766a65db7c60806bec4ef",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/roof_planks"
+    },
+    {
+      "path": "assets/materials/pbr/roof_planks_rough.jpg",
+      "asset": "roof_planks",
+      "map": "Rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/roof_planks/roof_planks_rough_1k.jpg",
+      "md5": "45e3f550a7aa382c4ae4cdc38f8004a3",
+      "sha256": "1f77ab4ed38f1c154d535244bc6cc76930004df1d2227cdcccadda2172f2a5e4",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/roof_planks"
+    },
+    {
+      "path": "assets/materials/pbr/roof_planks_height.jpg",
+      "asset": "roof_planks",
+      "map": "Displacement",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/roof_planks/roof_planks_disp_1k.jpg",
+      "md5": "bc8ace5b0110be98d91886ce9db1ce60",
+      "sha256": "46181665bec451b5c2013fdca499e06332d558544ac0c1c35e9ad1d967e1e9b6",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/roof_planks"
+    },
+    {
+      "path": "assets/materials/pbr/roof_planks_ao.jpg",
+      "asset": "roof_planks",
+      "map": "AO",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/roof_planks/roof_planks_ao_1k.jpg",
+      "md5": "7b2de9b366713107dabc8bfa65898513",
+      "sha256": "c7fa3674ae3fa4c86e73b144e5e2945a062087dd5fafc89d0da48dfaadd56bc5",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/a/roof_planks"
     }
   ]
 }

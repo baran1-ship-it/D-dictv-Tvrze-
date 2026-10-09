@@ -37,8 +37,8 @@ func run() -> void:
 	root.add_child(game)
 	for frame in range(10):
 		await physics_frame
-	check(game.world.doors.size()==18,"18 usable doors should be present")
-	check(game.world.stair_routes.size()==7,"gallery, wall access and three tower flights should exist")
+	check(game.world.doors.size()==19,"19 usable doors should be present")
+	check(game.world.stair_routes.size()==8,"gallery, wall access and three tower flights should exist")
 	check(not game.has_method("release_arrow"),"archery must be absent")
 	var c = game.controls
 	var center: Vector2 = c.joystick_center()
@@ -89,9 +89,23 @@ func run() -> void:
 	await create_timer(.8).timeout
 	check(not door.opened,"door should be closed")
 	check(game.player.test_move(game.player.transform,Vector3(0,0,2)),"closed door should block movement")
-	check(game.world.windows.size()>20,"windows should be actual framed openings")
+	check(game.world.windows.size()>=8,"windows should be actual framed openings")
 	check(game.world.relief_cells>10000,"masonry and paving must have geometric relief")
-	check(game.world.roof_cells>3000,"roof slopes must have physically displaced scanned tiles")
+	check(game.world.roof_cells>3000,"roof slopes must contain individual overlapping wooden shingles")
+	check(game.world.stone_count>5000,"fortifications must contain closed individual 3D stones")
+	for w in game.world.windows:
+		check(absf(w.x-17)>.01 and absf(w.z+17)>.01,"windows facing the inaccessible inner perimeter must be removed")
+	# Sample the corrected wall-side seams, using visible floor footprints as well as collision rays.
+	for pos in [Vector3(-17.35,1.8,-5.5),Vector3(-15.6,1.8,-7.65),Vector3(-17.35,3.6,-7.6),Vector3(8.4,3.6,.6),Vector3(9.2,1.8,-7.6),Vector3(9.2,5.4,-7.6),Vector3(9.2,9,-7.6)]:
+		var supported := false
+		for f in game.world.floor_patches:
+			if absf(f.pos.y-pos.y)<.02 and Rect2(Vector2(f.pos.x,f.pos.z)-f.size*.5,f.size).has_point(Vector2(pos.x,pos.z)): supported = true
+		check(supported,"visible landing must reach the wall at "+str(pos))
+	# Guard the enlarged tower turning platforms on their exposed side.
+	for y in [1.8,5.4,9.0]:
+		var query := PhysicsRayQueryParameters3D.create(Vector3(11.3,y+.6,-6.3),Vector3(12.0,y+.6,-6.3))
+		query.exclude = [game.player.get_rid()]
+		check(not game.get_world_3d().direct_space_state.intersect_ray(query).is_empty(),"tower turning landing needs an effective guard")
 	for normal in game.world.roof_normals:
 		check(normal.y>0,"all roof faces must point out and upward")
 	for d in game.world.doors:
@@ -121,7 +135,7 @@ func run() -> void:
 		check(passed,"wall walk must connect through courtyard corners and across gate")
 	# Walk through the complete upper doorway, including its outer railing gap.
 	for d in game.world.doors:
-		if d.title not in ["Přístup na hradby","Obranný ochoz"]:
+		if d.title not in ["Přístup na hradby","Obranný ochoz","Východní hradby"]:
 			continue
 		game.player.position = d.to_global(Vector3(0,.1,-.65))
 		game.player.velocity = Vector3.ZERO
@@ -129,11 +143,25 @@ func run() -> void:
 			await physics_frame
 		check(d.toggle(game.player.global_position),"upper access door must open")
 		await create_timer(.8).timeout
-		var distance := .95 if d.title=="Přístup na hradby" else .5
+		var distance := .95 if d.title in ["Přístup na hradby","Východní hradby"] else .5
 		check(await walk_to(d.to_global(Vector3(0,.1,distance))),"upper doorway and railing gap must be traversable: "+d.title)
 		check(await walk_to(d.to_global(Vector3(0,.1,-1.0))),"upper doorway must work in reverse: "+d.title)
 		check(d.toggle(game.player.global_position),"upper access door must close")
 		await create_timer(.8).timeout
+	# Check the complete swing against static walls and guards, not only the threshold.
+	for d in game.world.doors:
+		if d.title not in ["Přístup na hradby","Obranný ochoz","Východní hradby"]: continue
+		for side in [-1.0,1.0]:
+			var direction: float = d.opening_side if d.opening_side!=0 else side
+			for i in range(1,13):
+				var query := PhysicsShapeQueryParameters3D.new()
+				query.shape = BoxShape3D.new()
+				query.shape.size = Vector3(d.width,d.height-.04,.13)
+				var t: Transform3D = d.global_transform*Transform3D(Basis.IDENTITY,d.pivot.position)*Transform3D(Basis(Vector3.UP,direction*PI*.49*i/12),Vector3.ZERO)*d.collider.transform
+				query.transform = t
+				query.margin = .002
+				query.exclude = [d.body.get_rid(),game.player.get_rid()]
+				check(game.get_world_3d().direct_space_state.intersect_shape(query,1).is_empty(),"door swing must clear guards and walls: "+d.title+" sample "+str(i))
 	# Check every threshold has support on both sides, and no overhead collision.
 	for d in game.world.doors:
 		for side in [-1,1]:

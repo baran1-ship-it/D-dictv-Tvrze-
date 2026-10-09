@@ -1,10 +1,16 @@
 extends Node3D
 const Door = preload("res://scripts/fortress_door.gd")
 const Construction = preload("res://scripts/construction_mesh.gd")
+const Masonry = preload("res://scripts/masonry_mesh.gd")
+const Shingles = preload("res://scripts/shingle_mesh.gd")
 const Scanned = preload("res://scripts/scanned_surface.gd")
 var heights: Dictionary = {}
 var relief_cells := 0
 var roof_cells := 0
+var stone_count := 0
+var use_solid_masonry := false
+var floor_patches: Array = []
+var rail_routes: Array = []
 var mats: Dictionary = {}
 var batches: Dictionary = {}
 var mesh_cache: Dictionary = {}
@@ -38,25 +44,28 @@ func build() -> void:
 			foliage.radial_segments = 10
 			foliage.rings = 6
 			batch(foliage,Transform3D(Basis.IDENTITY,pos+Vector3(sin(j*2.4)*.7,4.5+j*.9,cos(j*2.4)*.7)),"leaves")
-	for x in [-18.0,18.0]:
-		wall_piece(Vector3(x,2.8,0),Vector3(36,5.6,.85),PI/2)
-	wall_piece(Vector3(0,2.8,-18),Vector3(36,5.6,.85))
-	wall(Vector3(0,0,18),36,5.6,[0.0],["Vstupní brána"])
-	for i in range(18):
-		var p := -17.0+i*2
-		for z in [-18.0,18.0]:
+	use_solid_masonry = true
+	for x in [-18.0,20.5]:
+		wall_piece(Vector3(x,2.8,-1.25),Vector3(38.5,5.6,.85),PI/2)
+	wall_piece(Vector3(1.25,2.8,-20.5),Vector3(38.5,5.6,.85))
+	wall(Vector3(1.25,0,18),38.5,5.6,[-1.25],["Vstupní brána"])
+	for i in range(20):
+		var p := -17.0+i*1.9
+		for z in [-20.5,18.0]:
 			wall_piece(Vector3(p,6.1,z),Vector3(.95,1,1))
-		for x in [-18.0,18.0]:
-			wall_piece(Vector3(x,6.1,p),Vector3(1,1,.95))
+		var q := -19.5+i*1.9
+		for x in [-18.0,20.5]:
+			wall_piece(Vector3(x,6.1,q),Vector3(1,1,.95))
+	use_solid_masonry = false
 	# A connected palace with real floorboards and masonry openings.
 	floorboards(Vector3(0,0,-12.5),Vector2(34,9))
 	for y in [3.6,7.2]:
 		floorboards(Vector3(0,y,-12.5),Vector2(34,9))
 	for y in [0.0,3.6]:
-		wall(Vector3(0,y,-8),34,3.6,[-8.8,0.0,6.8,14.5] if y==0 else [-15.9,-8.8,0.0,6.8,14.5],["Kovárna","Kuchyň","Hodovní síň","Průchod do věže"] if y==0 else ["Obranný ochoz","Komnata","Palácová komnata","Hodovní síň","Průchod do věže"])
+		wall(Vector3(0,y,-8),34,3.6,[-8.8,0.0,6.8,14.5] if y==0 else [-15.4,-8.8,0.0,6.8,14.5],["Kovárna","Kuchyň","Hodovní síň","Průchod do věže"] if y==0 else ["Obranný ochoz","Komnata","Palácová komnata","Hodovní síň","Průchod do věže"])
 		for x in [-5.65,5.65]:
 			wall(Vector3(x,y,-12.5),9,3.6,[0.0],["Spojovací dveře"],PI/2)
-		window_wall(Vector3(0,y,-17),34,3.6,[-13.0,-8.5,0.0,8.5,13.0])
+		wall_piece(Vector3(0,y+1.8,-17),Vector3(34,3.6,.6))
 	for x in [-17.0,17.0]:
 		wall_piece(Vector3(x,3.6,-12.5),Vector3(9,7.2,.6),PI/2)
 	rooms = [{"name":"Kovárna","rect":Rect2(-17,-17,11.35,9)},{"name":"Kuchyň","rect":Rect2(-5.65,-17,11.3,9)},{"name":"Hodovní síň","rect":Rect2(5.65,-17,11.35,9)}]
@@ -73,7 +82,7 @@ func build() -> void:
 		else:
 			window_wall(Vector3(8,y,8),14,3.6,[0.0],PI/2)
 		wall(Vector3(12.5,y,1),9,3.6,[2.0],["Dveře do věže"])
-		window_wall(Vector3(17,y,8),14,3.6,[-4.0,4.0],PI/2)
+		wall_piece(Vector3(17,y+1.8,8),Vector3(14,3.6,.6),PI/2)
 		if y==0:
 			window_wall(Vector3(12.5,y,15),9,3.6,[0.0])
 		else:
@@ -161,11 +170,23 @@ func pbr(asset: String, tint := Color.WHITE) -> StandardMaterial3D:
 
 func make_materials() -> void:
 	mats.stone = textured("res://assets/materials/rock.jpg",.9,Color("a49f91"))
-	mats.trim = textured("res://assets/materials/rock.jpg",1.4,Color("d4c4a5"))
+	mats.trim = pbr("rock_face_03",Color("d4c4a5"))
+	mats.trim.uv1_triplanar = true
+	mats.trim.uv1_world_triplanar = true
+	mats.trim.uv1_scale = Vector3.ONE*.5
 	mats.trim.normal_enabled = false
 	mats.rubble = pbr("stone_wall",Color("d9cbb7"))
-	mats.paving = pbr("cobblestone_floor_04")
-	mats.roofscan = pbr("roof_09",Color("b77c56"))
+	mats.paving = pbr("cobblestone_floor_04",Color("a4a69c"))
+	mats.roofscan = pbr("roof_planks",Color("8c8880"))
+	mats.roofscan.vertex_color_use_as_albedo = true
+	mats.roofscan.roughness_texture = null
+	mats.roofscan.roughness = .98
+	mats.rock3d = pbr("rock_face_03",Color("b0b5b5"))
+	mats.rock3d.vertex_color_use_as_albedo = true
+	mats.stone_floor = mats.rock3d.duplicate()
+	mats.stone_floor.albedo_color = Color("a49d8e")
+	mats.towerstone = mats.rubble.duplicate()
+	mats.towerstone.albedo_color = Color("c8b99f")
 	mats.rubble_edge = mats.rubble.duplicate()
 	mats.rubble_edge.uv1_triplanar = true
 	mats.rubble_edge.uv1_world_triplanar = true
@@ -198,7 +219,8 @@ func make_materials() -> void:
 	mats.flame = plain(Color("e8a954"))
 	mats.flame.emission_enabled = true
 	mats.flame.emission = Color("ecb66a")
-	mats.tile3 = plain(Color("8f4c34"),.95)
+	mats.tile3 = mats.beam.duplicate()
+	mats.tile3.albedo_color = Color("6b6152")
 
 func batch(mesh: Mesh, transform: Transform3D, material_id: String) -> void:
 	if mesh_cache.has(material_id) and mesh==mesh_cache[material_id]:
@@ -263,6 +285,7 @@ func cylinder(pos: Vector3, top: float, bottom: float, height: float, material_i
 	batch(mesh,Transform3D(Basis.IDENTITY,pos),material_id)
 
 func floorboards(pos: Vector3, size: Vector2) -> void:
+	floor_patches.append({"pos":pos,"size":size})
 	collision(Transform3D(Basis.IDENTITY,pos-Vector3(0,.07,0)),Vector3(size.x,.14,size.y))
 	var count := int(ceil(size.x/.3))
 	var width := size.x/count
@@ -278,40 +301,78 @@ func courtyard() -> void:
 	batch(relief.mesh,Transform3D.IDENTITY,"paving")
 	relief_cells += relief.cells
 
+func stone_floor(pos: Vector3, size: Vector2) -> void:
+	floor_patches.append({"pos":pos,"size":size})
+	box(pos-Vector3(0,.13,0),Vector3(size.x,.26,size.y),"mortar",true)
+	var surface := Scanned.make(pos-Vector3(size.x*.5,-.016,size.y*.5),Vector3.RIGHT,Vector3.BACK,Vector3.UP,size,heights.rock_face_03,2.7,.025,.12)
+	batch(surface.mesh,Transform3D.IDENTITY,"stone_floor")
+	relief_cells += surface.cells
+
 func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 	var basis := Basis(Vector3.UP,angle)
 	var mesh := BoxMesh.new()
 	mesh.size = size
-	batch(mesh,Transform3D(basis,pos),"rubble_edge")
+	batch(mesh,Transform3D(basis,pos),"mortar" if use_solid_masonry else "rubble_edge")
 	collision(Transform3D(basis,pos),size)
-	# One scanned rubble surface: diffuse/normal/height share coordinates.
+	if use_solid_masonry:
+		var x := size.x*.5
+		var y := size.y*.5
+		var z := size.z*.5
+		var faces := [
+			[Vector3(-x,-y,z),Vector3.RIGHT,Vector3.UP,Vector3.BACK,Vector2(size.x,size.y)],
+			[Vector3(-x,-y,-z),Vector3.RIGHT,Vector3.UP,Vector3.FORWARD,Vector2(size.x,size.y)],
+			[Vector3(x,-y,-z),Vector3.BACK,Vector3.UP,Vector3.RIGHT,Vector2(size.z,size.y)],
+			[Vector3(-x,-y,-z),Vector3.BACK,Vector3.UP,Vector3.LEFT,Vector2(size.z,size.y)],
+			[Vector3(-x,y,-z),Vector3.RIGHT,Vector3.BACK,Vector3.UP,Vector2(size.x,size.z)]]
+		for i in range(faces.size()):
+			var f: Array = faces[i]
+			var stone := Masonry.face(pos+basis*f[0],basis*f[1],basis*f[2],basis*f[3],f[4],int(absf(pos.x*131+pos.z*193+pos.y*557))+i*47+1403)
+			batch(stone.mesh,Transform3D.IDENTITY,"rock3d")
+			stone_count += stone.stones
+		return
+	var tower_style := pos.x>7.5 and pos.z<1.1
+	var material_id := "towerstone" if tower_style else "rubble"
+	var period := 2.6 if tower_style else 2.0
+	var phase := Vector2(sin(pos.x*.17)*.53,cos(pos.z*.21)*.37)
 	for side in [-1,1]:
 		var normal: Vector3 = basis.z*side
-		var origin := pos+basis*Vector3(-size.x*.5,-size.y*.5,side*(size.z*.5+.045))
-		var relief := Scanned.make(origin,basis.x,Vector3.UP,normal,Vector2(size.x,size.y),heights.stone_wall,2,.085,.08)
-		batch(relief.mesh,Transform3D.IDENTITY,"rubble")
+		var lime_face: bool = absf(pos.z+8)<.01 and pos.x>-7.65 and pos.x<5.65 and side==1
+		var depth := .035 if lime_face else .24
+		var origin := pos+basis*Vector3(-size.x*.5,-size.y*.5,side*(size.z*.5+depth*.5+.005))
+		var height_map: Image = heights.plastered_wall if lime_face else heights.stone_wall
+		var relief := Scanned.make(origin,basis.x,Vector3.UP,normal,Vector2(size.x,size.y),height_map,1.4 if lime_face else period,depth,.075,false,phase)
+		batch(relief.mesh,Transform3D.IDENTITY,"plaster" if lime_face else material_id)
 		relief_cells += relief.cells
 
 func wall(pos: Vector3, width: float, height: float, centers: Array, titles: Array, angle := 0.0) -> void:
 	var basis := Basis(Vector3.UP,angle)
 	var start := -width/2
+	var short_door := height<3.0
+	var opening_height := 2.38 if short_door else 2.72
 	for i in range(centers.size()):
 		var center: float = centers[i]
 		var edge := center-1.13
 		if edge>start:
 			wall_piece(pos+basis*Vector3((start+edge)*.5,height*.5,0),Vector3(edge-start,height,.55),angle)
-		wall_piece(pos+basis*Vector3(center,(height+2.72)*.5,0),Vector3(2.26,height-2.72,.55),angle)
+		wall_piece(pos+basis*Vector3(center,(height+opening_height)*.5,0),Vector3(2.26,height-opening_height,.55),angle)
 		for side in [-1,1]:
-			for j in range(6):
-				var stone := Construction.block(Vector3(.25,.43,.74),.025)
-				batch(stone,Transform3D(basis,pos+basis*Vector3(center+side*1.20,.22+j*.44,0)),"trim")
-		var lintel := Construction.block(Vector3(2.65,.3,.76),.04)
-		batch(lintel,Transform3D(basis,pos+basis*Vector3(center,2.84,0)),"trim")
+			var courses := 5 if short_door else 6
+			var course_height := opening_height/courses
+			for j in range(courses):
+				var stone := Construction.block(Vector3(.25,course_height-.016,.74),.025)
+				batch(stone,Transform3D(basis,pos+basis*Vector3(center+side*1.20,(j+.5)*course_height,0)),"trim")
+		var lintel := Construction.block(Vector3(2.65,.18 if short_door else .3,.76),.04)
+		batch(lintel,Transform3D(basis,pos+basis*Vector3(center,2.47 if short_door else 2.84,0)),"trim")
 		var door := Door.new()
 		door.position = pos+basis*Vector3(center,0,0)
 		door.rotation.y = angle
 		add_child(door)
+		if short_door: door.height = 2.35
 		door.configure(mats.door,mats.iron,titles[i])
+		if titles[i] in ["Přístup na hradby","Východní hradby"]:
+			door.opening_side = -1.0
+		elif titles[i]=="Obranný ochoz":
+			door.opening_side = 1.0
 		doors.append(door)
 		start = center+1.13
 	if start<width/2:
@@ -366,9 +427,9 @@ func tiled_plane(origin: Vector3, across: Vector3, slope: Vector3) -> void:
 		a = -a
 		normal = -normal
 	roof_normals.append(normal)
-	var relief := Scanned.make(start,a.normalized(),slope.normalized(),normal,Vector2(a.length(),slope.length()),heights.roof_09,1.2,.045,.065)
+	var relief := Shingles.make(start,a.normalized(),slope.normalized(),normal,Vector2(a.length(),slope.length()))
 	batch(relief.mesh,Transform3D.IDENTITY,"roofscan")
-	roof_cells += relief.cells
+	roof_cells += relief.count
 	var underside := SurfaceTool.new()
 	underside.begin(Mesh.PRIMITIVE_TRIANGLES)
 	Construction.quad(underside,[start-normal*.055,start+a-normal*.055,start+a+slope-normal*.055,start+slope-normal*.055],-normal,Vector2(a.length()*.5,slope.length()*.5))
@@ -409,9 +470,9 @@ func hip_roof(pos: Vector3, size: Vector2, rise: float) -> void:
 		var v := climb.normalized()
 		var normal := u.cross(v).normalized()
 		roof_normals.append(normal)
-		var relief := Scanned.make(a,u,v,normal,Vector2(a.distance_to(b),climb.length()),heights.roof_09,1.2,.045,.065,true)
+		var relief := Shingles.make(a,u,v,normal,Vector2(a.distance_to(b),climb.length()),true)
 		batch(relief.mesh,Transform3D.IDENTITY,"roofscan")
-		roof_cells += relief.cells
+		roof_cells += relief.count
 		beam(a,b,.19)
 		beam(a+Vector3.UP*.04,peak+Vector3.UP*.04,.12,"tile3")
 
@@ -424,18 +485,21 @@ func gable(points: Array, normal: Vector3) -> void:
 	relief_cells += relief.cells
 
 func rail(a: Vector3, b: Vector3, opening := false) -> void:
+	if a.distance_to(b)<.01: return
+	rail_routes.append({"a":a,"b":b})
 	var count := int(ceil(a.distance_to(b)/.32))
 	beam(a+Vector3(0,1.02,0),b+Vector3(0,1.02,0),.10,"beam",true)
 	beam(a+Vector3(0,.18,0),b+Vector3(0,.18,0),.08)
 	for i in range(count+1):
 		var p := a.lerp(b,float(i)/count)
 		beam(p,p+Vector3(0,1.02,0),.055 if i%6 else .12)
-	if not opening:
-		var center := (a+b)/2+Vector3(0,.52,0)
-		var direction := (b-a).normalized()
-		var flat := Vector3(direction.x,0,direction.z).normalized()
-		var basis := Basis(flat,Vector3.UP,flat.cross(Vector3.UP))
-		collision(Transform3D(basis,center),Vector3(a.distance_to(b),1.04,.09))
+	# Short vertical guard panels follow the slope at tread height.
+	var direction := (b-a).normalized()
+	var flat := Vector3(direction.x,0,direction.z).normalized()
+	var basis := Basis(flat,Vector3.UP,flat.cross(Vector3.UP))
+	for i in range(count):
+		var p := a.lerp(b,(i+.5)/count)+Vector3(0,.52,0)
+		collision(Transform3D(basis,p),Vector3(Vector2(b.x-a.x,b.z-a.z).length()/count+.015,1.04,.09))
 
 func flight(first: Vector3, direction: Vector3, count: int, rise: float, run: float, width: float) -> Vector3:
 	var across := Vector3(direction.z,0,-direction.x)
@@ -467,16 +531,17 @@ func gallery() -> void:
 	beam(Vector3(-10.4,3.45,-5),Vector3(8,3.45,-5),.25)
 	# Compact U stair runs parallel to the facade, under one joined canopy.
 	flight(Vector3(-10.6,0,-4.5),Vector3.LEFT,10,.18,.48,1.6)
-	floorboards(Vector3(-15.6,1.8,-5.5),Vector2(1.4,2.7))
+	floorboards(Vector3(-16.18,1.8,-5.68),Vector2(2.72,4.06))
 	flight(Vector3(-14.92,1.8,-6.5),Vector3.RIGHT,10,.18,.48,1.6)
 	for z in [-6.7,-4.3]:
 		beam(Vector3(-17.05,0,z),Vector3(-17.05,6.8,z),.23,"beam",true)
 		beam(Vector3(-17.05,1.3,z),Vector3(-15.0,1.73,z),.16)
-	rail(Vector3(-16.3,1.8,-6.85),Vector3(-16.3,1.8,-4.15))
-	rail(Vector3(-16.3,1.8,-4.15),Vector3(-14.9,1.8,-4.15))
-	floorboards(Vector3(-15.9,3.6,-7.6),Vector2(2.7,.8))
+	rail(Vector3(-17.45,1.8,-7.71),Vector3(-17.45,1.8,-3.65))
+	rail(Vector3(-17.45,1.8,-7.71),Vector3(-14.82,1.8,-7.71))
+	rail(Vector3(-17.45,1.8,-3.65),Vector3(-14.82,1.8,-3.65))
+	floorboards(Vector3(-15.85,3.6,-7.6),Vector2(3.4,.8))
 	rail(Vector3(-15.7,3.6,-7.2),Vector3(-14.55,3.6,-7.2))
-	for x in [-17.25,-14.55]:
+	for x in [-17.48,-14.55]:
 		rail(Vector3(x,3.6,-8),Vector3(x,3.6,-7.2))
 	flight(Vector3(-16.5,3.6,-6.9),Vector3.BACK,5,.18,.4,1.6)
 	stair_routes.append({"start":Vector3(-9.95,.08,-4.5),"mid":Vector3(-15.6,1.9,-4.5),"turn":Vector3(-15.6,1.9,-6.5),"end":Vector3(-9.7,3.7,-6.5),"exit":Vector3(-8.8,3.7,-6.5)})
@@ -485,10 +550,10 @@ func gallery() -> void:
 
 func defensive_walk() -> void:
 	floorboards(Vector3(-16.6,4.5,5.8),Vector2(1.8,21.6))
-	floorboards(Vector3(0,4.5,16.6),Vector2(35,1.8))
+	floorboards(Vector3(1.25,4.5,16.6),Vector2(37.5,1.8))
 	rail(Vector3(-15.65,4.5,-4.9),Vector3(-15.65,4.5,13.5))
 	rail(Vector3(-15.6,4.5,15.65),Vector3(13.1,4.5,15.65))
-	rail(Vector3(15.9,4.5,15.65),Vector3(17.2,4.5,15.65))
+	rail(Vector3(15.9,4.5,15.65),Vector3(17.35,4.5,15.65))
 	for z in range(-4,17,3):
 		beam(Vector3(-17.6,4.37,z),Vector3(-15.65,4.37,z),.22)
 		beam(Vector3(-17.55,2.8,z),Vector3(-15.7,4.3,z),.20)
@@ -500,14 +565,26 @@ func defensive_walk() -> void:
 	floorboards(Vector3(-15.0,4.5,14.5),Vector2(3.1,1.8))
 	rail(Vector3(-15.6,4.5,13.55),Vector3(-14,4.5,13.55))
 	stair_routes.append({"start":Vector3(-4.45,.08,14.5),"mid":Vector3(-14.7,4.6,14.5),"turn":Vector3(-16.5,4.6,14.5),"end":Vector3(-16.5,4.6,16.6),"exit":Vector3(-12.0,4.6,16.6)})
-	wall_routes = [Vector3(-16.5,4.6,-4),Vector3(-16.5,4.6,16.6),Vector3(0,4.6,16.6),Vector3(16.5,4.6,16.6)]
+	stone_floor(Vector3(18.75,4.5,-.25),Vector2(2.7,36.5))
+	stone_floor(Vector3(1.1,4.5,-18.75),Vector2(35.3,2.7))
+	rail(Vector3(17.35,4.5,-17.4),Vector3(17.35,4.5,-4.9))
+	rail(Vector3(17.35,4.5,-2.1),Vector3(17.35,4.5,15.65))
+	rail(Vector3(-16.55,4.5,-17.35),Vector3(17.35,4.5,-17.35))
+	rail(Vector3(-16.55,4.5,-20.1),Vector3(-16.55,4.5,-17.35))
+	wall_routes = [Vector3(-16.5,4.6,-4),Vector3(-16.5,4.6,16.6),Vector3(0,4.6,16.6),Vector3(18.75,4.6,16.6),Vector3(18.75,4.6,-18.75),Vector3(-15.7,4.6,-18.75)]
+	rooms.append({"name":"Kamenný ochoz za věží","rect":Rect2(17.35,-20.1,2.7,37.6)})
+	rooms.append({"name":"Severní hradby","rect":Rect2(-16.55,-20.1,36.5,2.7)})
 	rooms.append({"name":"Obranný ochoz","rect":Rect2(-17.5,-5,1.9,22.5)})
 	rooms.append({"name":"Ochoz nad bránou","rect":Rect2(-17.5,15.6,35,1.9)})
 
 func build_tower() -> void:
 	for y in [0.0,3.6,7.2,10.8]:
 		window_wall(Vector3(8,y,-3.5),9,3.6,[0.0],PI/2)
-		window_wall(Vector3(17,y,-3.5),9,3.6,[0.0],PI/2)
+		if y==3.6:
+			wall_piece(Vector3(17,4.05,-3.5),Vector3(9,.9,.6),PI/2)
+			wall(Vector3(17,4.5,-3.5),9,2.75,[0.0],["Východní hradby"],PI/2)
+		else:
+			wall_piece(Vector3(17,y+1.8,-3.5),Vector3(9,3.6,.6),PI/2)
 		if y>=7.2:
 			window_wall(Vector3(12.5,y,-8),9,3.6,[0.0])
 			window_wall(Vector3(12.5,y,1),9,3.6,[0.0])
@@ -516,13 +593,19 @@ func build_tower() -> void:
 		var y := floor*3.6
 		if floor>0:
 			floorboards(Vector3(14.15,y,-3.5),Vector2(5.05,8.2))
-			floorboards(Vector3(10.1,y,-.35),Vector2(3.8,1.1))
-			rail(Vector3(11.68,y,-7.5),Vector3(11.68,y,-.95))
+			floorboards(Vector3(9.95,y,-.18),Vector2(3.46,1.9))
+			rail(Vector3(11.68,y,-7.75),Vector3(11.68,y,-1.12))
 		if floor<3:
 			flight(Vector3(9.12,y,-.9),Vector3.FORWARD,10,.18,.48,1.5)
-			floorboards(Vector3(9.95,y+1.8,-6.05),Vector2(3.25,1.2))
+			floorboards(Vector3(9.93,y+1.8,-6.35),Vector2(3.40,2.82))
+			rail(Vector3(11.63,y+1.8,-7.76),Vector3(11.63,y+1.8,-4.94))
 			flight(Vector3(10.82,y+1.8,-5.22),Vector3.BACK,10,.18,.48,1.5)
 			stair_routes.append({"start":Vector3(9.12,y+.08,-.2),"mid":Vector3(9.12,y+1.9,-6.05),"turn":Vector3(10.82,y+1.9,-6.05),"end":Vector3(10.82,y+3.7,-.35),"exit":Vector3(14,y+3.7,-.35)})
+	flight(Vector3(13.9,3.6,-3.5),Vector3.RIGHT,5,.18,.4,1.6)
+	floorboards(Vector3(16.55,4.5,-3.5),Vector2(1.9,2.7))
+	for z in [-4.85,-2.15]:
+		rail(Vector3(15.6,4.5,z),Vector3(16.7,4.5,z))
+	stair_routes.append({"start":Vector3(13.3,3.68,-3.5),"mid":Vector3(15.0,4.14,-3.5),"turn":Vector3(16.25,4.6,-3.5),"end":Vector3(16.25,4.6,-3.5),"exit":Vector3(16.25,4.6,-3.5)})
 	floorboards(Vector3(12.5,14.4,-3.5),Vector2(9,9))
 	hip_roof(Vector3(12.5,14.45,-3.5),Vector2(10,10),3.2)
 	rooms.append({"name":"Věž","rect":Rect2(8,-8,9,9)})
@@ -531,33 +614,6 @@ func details() -> void:
 	for y in [0.0,3.6]:
 		box(Vector3(-4.6,y+1.9,-16.59),Vector3(5,2.65,.055),"plaster")
 		box(Vector3(4,y+1.9,-16.59),Vector3(3,2.65,.055),"plaster")
-	for pos in [Vector3(-8.8,2.3,-7.55),Vector3(0,2.3,-7.55),Vector3(8.4,2.3,9),Vector3(14,2.3,1.5)]:
-		lantern(pos)
-	box(Vector3(-13,.8,-14),Vector3(2,1.6,1.8),"stone",true)
-	box(Vector3(-10,.45,-12),Vector3(.4,.9,.4),"wood",true)
-	box(Vector3(-10,1,-12),Vector3(1.25,.22,.55),"iron",true)
-	box(Vector3(-15,1.1,-10.2),Vector3(2.7,.15,1),"wood",true)
-	box(Vector3(2,.5,-14.8),Vector3(2.5,1,1.4),"stone",true)
-	table(Vector3(-1,0,-12),Vector2(3,1.4))
-	table(Vector3(11,0,-12.5),Vector2(3,5))
-	for x in [8.9,13.1]:
-		box(Vector3(x,.45,-12.5),Vector3(.55,.18,4.8),"wood",true)
-		for z in [-14.5,-10.5]:
-			box(Vector3(x,.22,z),Vector3(.12,.44,.12),"wood")
-	for floor in [1,2,3]:
-		table(Vector3(15,floor*3.6,-6.3),Vector2(1.7,.8))
-	box(Vector3(15,11.25,-3.2),Vector3(1.8,.65,2.5),"wood",true)
-	box(Vector3(15,11.63,-3.2),Vector3(1.7,.13,2.4),"linen")
-	box(Vector3(15,11.77,-4.1),Vector3(1.5,.2,.45),"linen")
-	for y in [0.0,3.6]:
-		for z in [5.0,10.0]:
-			box(Vector3(15,y+.55,z),Vector3(1.65,1.1,2.3),"wood",true)
-			box(Vector3(15,y+1.17,z),Vector3(1.55,.14,2.2),"linen")
-	for i in range(6):
-		var pos := Vector3(-16+i*.8,.58,15)
-		cylinder(pos,.34,.36,1.1,"wood")
-		for y in [.18,.93]:
-			cylinder(Vector3(pos.x,y,pos.z),.365,.365,.05,"iron")
 	for pos in [Vector3(-11,2,-14),Vector3(0,2,-14),Vector3(11,2,-14),Vector3(14,5,-4),Vector3(14,9,-4),Vector3(14,12,-4),Vector3(13,2,9),Vector3(13,5.5,9)]:
 		var light := OmniLight3D.new()
 		light.position = pos
