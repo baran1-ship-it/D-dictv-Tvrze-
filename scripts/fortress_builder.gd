@@ -163,9 +163,9 @@ func make_materials() -> void:
 	mats.stone = textured("res://assets/materials/rock.jpg",.9,Color("a49f91"))
 	mats.trim = textured("res://assets/materials/rock.jpg",1.4,Color("d4c4a5"))
 	mats.trim.normal_enabled = false
-	mats.rubble = pbr("stone_wall")
+	mats.rubble = pbr("stone_wall",Color("d9cbb7"))
 	mats.paving = pbr("cobblestone_floor_04")
-	mats.roofscan = pbr("roof_09",Color("fff0d8"))
+	mats.roofscan = pbr("roof_09",Color("b77c56"))
 	mats.rubble_edge = mats.rubble.duplicate()
 	mats.rubble_edge.uv1_triplanar = true
 	mats.rubble_edge.uv1_world_triplanar = true
@@ -274,7 +274,7 @@ func floorboards(pos: Vector3, size: Vector2) -> void:
 			timber(Vector3(x,pos.y-.045,pos.z-size.y/2+(j+.5)*length),Vector3(width-.009,length-.012,.09),false,"wood",Vector3.FORWARD)
 
 func courtyard() -> void:
-	var relief := Scanned.make(Vector3(-18,-.005,-18),Vector3.RIGHT,Vector3.BACK,Vector3.UP,Vector2(36,36),heights.cobblestone_floor_04,1.5,.045,.08)
+	var relief := Scanned.make(Vector3(-18,.025,-18),Vector3.RIGHT,Vector3.BACK,Vector3.UP,Vector2(36,36),heights.cobblestone_floor_04,1.5,.045,.08)
 	batch(relief.mesh,Transform3D.IDENTITY,"paving")
 	relief_cells += relief.cells
 
@@ -287,7 +287,7 @@ func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 	# One scanned rubble surface: diffuse/normal/height share coordinates.
 	for side in [-1,1]:
 		var normal: Vector3 = basis.z*side
-		var origin := pos+basis*Vector3(-size.x*.5,-size.y*.5,side*(size.z*.5+.016))
+		var origin := pos+basis*Vector3(-size.x*.5,-size.y*.5,side*(size.z*.5+.045))
 		var relief := Scanned.make(origin,basis.x,Vector3.UP,normal,Vector2(size.x,size.y),heights.stone_wall,2,.085,.08)
 		batch(relief.mesh,Transform3D.IDENTITY,"rubble")
 		relief_cells += relief.cells

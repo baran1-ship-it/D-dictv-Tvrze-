@@ -104,5 +104,7 @@ jobs:
             build/roof-detail.png
             build/wall-walk.png
             build/tower-stairs.png
+            build/south-door.png
+            build/gallery-access.png
           if-no-files-found: error
           retention-days: 14

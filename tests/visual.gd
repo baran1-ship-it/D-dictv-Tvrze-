@@ -23,6 +23,8 @@ func run() -> void:
 	await shot("roof-detail.png",Vector3(-4,4.6,16.6),-.28,.20)
 	await shot("wall-walk.png",Vector3(-16.5,4.6,8),3.25,-.06)
 	await shot("tower-stairs.png",Vector3(14,3.7,-.4),1.15,.05)
+	await shot("south-door.png",Vector3(14.5,4.6,16.9),0,0)
+	await shot("gallery-access.png",Vector3(-15.9,3.7,-7.3),PI,-.12)
 	await shot("door-hand.png",Vector3(-8.8,.1,-7.0),0,0)
 	game.interact()
 	await create_timer(.29).timeout
