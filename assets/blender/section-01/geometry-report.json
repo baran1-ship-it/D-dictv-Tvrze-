@@ -1,0 +1,24 @@
+{
+  "stone_count": 426,
+  "static_triangles": 39218,
+  "door_triangles": 2076,
+  "static_material_batches": 6,
+  "door_material_batches": 2,
+  "lod1_triangles": 12018,
+  "width_m": 7,
+  "height_m": 7.2,
+  "stone_protrusion_m_max": 0.034,
+  "target_world_position_godot": [
+    8,
+    0,
+    8
+  ],
+  "target_y_rotation_deg": -90,
+  "door_width": 2.1,
+  "door_height": 2.65,
+  "window_opening": [
+    1.32,
+    1.3
+  ],
+  "hardware_fps_measured": false
+}
