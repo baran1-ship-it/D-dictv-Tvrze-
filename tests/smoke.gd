@@ -39,7 +39,7 @@ func run() -> void:
 	for frame in range(10):
 		await physics_frame
 	check(game.world.doors.size()==24,"22 doors and two gate leaves should be present")
-	check(game.world.stair_routes.size()==6,"three straight external stairs and three tower flights should exist")
+	check(game.world.stair_routes.size()==7,"three straight external stairs and four tower flights including attic should exist")
 	check(not game.has_method("release_arrow"),"archery must be absent")
 	var c = game.controls
 	var center: Vector2 = c.joystick_center()
@@ -168,6 +168,17 @@ func run() -> void:
 	for frame in range(8): await physics_frame
 	for point in [Vector3(18.75,.1,-18.75),Vector3(-16.4,.1,-18.75),Vector3(18.75,.1,-18.75),Vector3(18.75,.1,15.4)]:
 		check(await walk_to(point),"vaulted passage must support movement and return")
+	# Cross the new groin-vault corner diagonally and back with the real capsule.
+	game.player.position = Vector3(18.7,.1,-16.7)
+	game.player.velocity = Vector3.ZERO
+	for frame in range(8): await physics_frame
+	for point in [Vector3(18.7,.1,-18.7),Vector3(16.6,.1,-18.7),Vector3(18.7,.1,-18.7),Vector3(18.7,.1,-16.7)]:
+		check(await walk_to(point),"stone portals and groin vault must remain traversable")
+	game.player.position = Vector3(14,game.world.ATTIC_Y+.1,-.35)
+	game.player.velocity = Vector3.ZERO
+	for frame in range(8): await physics_frame
+	for point in [Vector3(15.8,game.world.ATTIC_Y+.1,-.35),Vector3(15.8,game.world.ATTIC_Y+.1,-6.7),Vector3(12.4,game.world.ATTIC_Y+.1,-6.7),Vector3(12.4,game.world.ATTIC_Y+.1,-.35)]:
+		check(await walk_to(point),"attic must allow standing movement under its roof framing")
 	game.player.position = game.world.wall_routes[0]
 	game.player.velocity = Vector3.ZERO
 	for frame in range(8):

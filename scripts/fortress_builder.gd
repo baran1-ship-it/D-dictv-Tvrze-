@@ -1,4 +1,6 @@
 extends Node3D
+const RoofClip = preload("res://scripts/roof_clip.gd")
+const ATTIC_Y := 14.91
 const Vault = preload("res://scripts/vault_mesh.gd")
 const GALLERY_Y := 5.0
 const UPPER_CLEAR := 3.0
@@ -67,22 +69,23 @@ func build() -> void:
 	use_solid_masonry = false
 	stone_floor(Vector3(0,0,-12.5),Vector2(34,9))
 	stone_floor(Vector3(0,GALLERY_Y,-12.5),Vector2(34,9))
-	floorboards(Vector3(0,GALLERY_Y+UPPER_CLEAR+.09,-12.5),Vector2(34,9))
+	floorboards(Vector3(0,GALLERY_Y+UPPER_CLEAR+.39,-12.5),Vector2(34,9))
 	for y in [0.0,GALLERY_Y]:
-		var h: float = GALLERY_Y if y==0 else UPPER_CLEAR+.15
+		var h: float = GALLERY_Y if y==0 else UPPER_CLEAR+.45
 		wall(Vector3(0,y,-8),34,h,[-8.8,0.0,6.8,14.5] if y==0 else [-15.4,-8.8,0.0,6.8,14.5],["Kovárna","Kuchyň","Hodovní síň","Průchod do věže"] if y==0 else ["Obranný ochoz","Komnata","Palácová komnata","Hodovní síň","Průchod do věže"])
 		for x in [-5.65,5.65]: wall(Vector3(x,y,-12.5),9,h,[0.0],["Spojovací dveře"],PI/2)
 		wall_piece(Vector3(0,y+h*.5,-17),Vector3(34,h,.6))
-	for x in [-17.0,17.0]: wall_piece(Vector3(x,4.075,-12.5),Vector3(9,8.15,.6),PI/2)
+	for x in [-17.0,17.0]: wall_piece(Vector3(x,4.225,-12.5),Vector3(9,8.45,.6),PI/2)
 	for x in [-11.325,0.0,11.325]: vaulted_ceiling(Vector3(x,0,-12.5),Vector2(10.7,8.4))
 	rooms = [{"name":"Kovárna","rect":Rect2(-17,-17,11.35,9)},{"name":"Kuchyň","rect":Rect2(-5.65,-17,11.3,9)},{"name":"Hodovní síň","rect":Rect2(5.65,-17,11.35,9)}]
-	roof(Vector3(0,8.15,-12.5),Vector2(35,10),3,true)
+	roof(Vector3(0,8.45,-12.5),Vector2(35,10),3,true)
+	for x in range(-16,17,2): beam(Vector3(x,8.15,-17.1),Vector3(x,8.15,-7.9),.30,"beam",true,false)
 	for x in [-12.0,.5]:
 		wall_piece(Vector3(x,9.9,-14),Vector3(.8,3.3,.8))
 		box(Vector3(x,11.65,-14),Vector3(1,.25,1),"trim")
 	gallery()
 	for y in [0.0,GALLERY_Y]:
-		var h: float = GALLERY_Y if y==0 else UPPER_CLEAR+.15
+		var h: float = GALLERY_Y if y==0 else UPPER_CLEAR+.45
 		stone_floor(Vector3(12.5,y,8),Vector2(9,14))
 		if y==0: wall(Vector3(8,y,8),14,h,[0.0],["Obytné křídlo"],PI/2)
 		else: window_wall(Vector3(8,y,8),14,h,[0.0],PI/2)
@@ -91,13 +94,15 @@ func build() -> void:
 		if y==0: window_wall(Vector3(12.5,y,15),9,h,[0.0])
 		else: wall(Vector3(12.5,y,15),9,h,[2.0],["Přístup na hradby"])
 	vaulted_ceiling(Vector3(12.5,0,8),Vector2(8.4,13.4),true)
-	floorboards(Vector3(12.5,8.09,8),Vector2(9,14))
-	roof(Vector3(12.5,8.15,8),Vector2(10,15),3,false)
+	floorboards(Vector3(12.5,8.39,8),Vector2(9,14))
+	for z in range(2,15,2): beam(Vector3(7.95,8.15,z),Vector3(17.05,8.15,z),.30,"beam",true,false)
+	roof(Vector3(12.5,8.45,8),Vector2(10,15),3,false)
 	floorboards(Vector3(14.5,GALLERY_Y,15.25),Vector2(2.7,2.1))
-	for x in [13.15,15.85]: rail(Vector3(x,GALLERY_Y,14.65),Vector3(x,GALLERY_Y,15.65))
+	# The solid south facade protects this doorway; no rail crosses its wall.
 	rooms.append({"name":"Obytné křídlo","rect":Rect2(8,1,9,14)})
 	build_tower()
 	defensive_walk()
+	building_corners()
 	details()
 	for key in batches:
 		var mesh := batches[key].commit() as ArrayMesh
@@ -301,6 +306,105 @@ func timber(pos: Vector3, size: Vector3, solid := false, material_id := "beam", 
 func beam(a: Vector3, b: Vector3, thickness: float, material_id := "beam", solid := false, show_ends := true) -> void:
 	timber((a+b)*.5,Vector3(thickness,a.distance_to(b),thickness),solid,material_id,b-a,show_ends)
 
+func roof_beam(a: Vector3, b: Vector3, thickness: float, material_id := "beam") -> void:
+	for part in RoofClip.beam_parts(a,b): beam(part[0],part[1],thickness,material_id,false,false)
+
+func building_corners() -> void:
+	# Interlocking quoins cover the entire corner thickness, including plaster returns.
+	var corners := [Vector3(-17,0,-17),Vector3(17,0,-17),Vector3(-17,0,-8),Vector3(8,0,1),Vector3(17,0,15),Vector3(8,0,15),Vector3(8,0,-8),Vector3(17,0,-8),Vector3(17,0,1)]
+	for corner in corners:
+		var height := 17.30 if corner.z in [-8.0,1.0] and corner.x>=8 else 8.45
+		var rows := int(ceil(height/.43))
+		for row in range(rows):
+			var h := height/rows
+			var size := Vector3(.84 if row%2==0 else .78,h-.013,.78 if row%2==0 else .84)
+			batch(Construction.block(size,.016),Transform3D(Basis.IDENTITY,corner+Vector3.UP*((row+.5)*h)),"trim")
+
+func barrel_height(offset: float, span: float) -> float:
+	var half := span*.5
+	var rise := minf(1.4,half*.8)
+	var radius := (half*half+rise*rise)/(2*rise)
+	return 4.5-radius+sqrt(maxf(0,radius*radius-offset*offset))
+
+func corridor_corner() -> void:
+	# A groin vault shares the exact arch profiles of both perpendicular barrels.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var count := 14
+	for x in range(count):
+		for z in range(count):
+			var points: Array = []
+			for corner in [Vector2(x,z),Vector2(x+1,z),Vector2(x+1,z+1),Vector2(x,z+1)]:
+				var px: float = 17.3+corner.x*2.8/count
+				var pz: float = -20.1+corner.y*2.8/count
+				points.append(Vector3(px,maxf(barrel_height(px-18.7,2.8),barrel_height(pz+18.7,2.8)),pz))
+			var normal: Vector3 = (points[1]-points[0]).cross(points[3]-points[0]).normalized()
+			if normal.y>0: normal = -normal
+			surface.set_color(Color(.92,.91,.90))
+			var phase := Vector2(((x*7+z*3)%2)*.5,((x+z*5)%4/2)*.5)+Vector2(.03,.03)
+			Construction.quad(surface,points,normal,Vector2(.32,.32),phase)
+			var top: Array = []
+			for point in points: top.append(point+Vector3.UP*.20)
+			Construction.quad(surface,top,-normal,Vector2(.32,.32),phase)
+	surface.index()
+	var mesh := surface.commit()
+	batch(mesh,Transform3D.IDENTITY,"vault_stone")
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(mesh.get_faces())
+	shape.backface_collision = true
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	static_body.add_child(collider)
+
+func vault_portal(center: Vector3, span: float, angle: float) -> void:
+	var basis := Basis(Vector3.UP,angle)
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in range(18):
+		var a := -span*.5+i*span/18
+		var b := -span*.5+(i+1)*span/18
+		var ya := barrel_height(a,span)
+		var yb := barrel_height(b,span)
+		for side in [-1,1]:
+			var normal := basis*Vector3(0,0,side)
+			var points := [Vector3(a,ya,side*.16),Vector3(b,yb,side*.16),Vector3(b,4.75,side*.16),Vector3(a,4.75,side*.16)]
+			for j in range(4): points[j] = center+basis*points[j]
+			surface.set_color(Color(.94,.93,.91))
+			Construction.quad(surface,points,normal,Vector2(.22,.32),Vector2((i%2)*.5+.04,.04))
+		var reveal := [Vector3(a,ya,-.16),Vector3(b,yb,-.16),Vector3(b,yb,.16),Vector3(a,ya,.16)]
+		for j in range(4): reveal[j] = center+basis*reveal[j]
+		Construction.quad(surface,reveal,Vector3.DOWN,Vector2(.22,.25),Vector2((i%2)*.5+.04,.04))
+	surface.index()
+	batch(surface.commit(),Transform3D.IDENTITY,"vault_stone")
+
+func attic_roof() -> void:
+	var base := 17.30
+	# Raised knee walls permit standing along the attic access route.
+	for x in [8.0,17.0]: wall_piece(Vector3(x,15.96,-3.5),Vector3(9,2.68,.6),PI/2)
+	for z in [-8.0,1.0]: wall_piece(Vector3(12.5,15.96,z),Vector3(9,2.68,.6))
+	hip_roof(Vector3(12.5,base,-3.5),Vector2(10,10),4.5)
+	var peak := Vector3(12.5,base+4.5,-3.5)
+	# Hip rafters and common rafters seat on continuous wall plates.
+	for z in [-7.7,.7]: beam(Vector3(8.25,base-.14,z),Vector3(16.75,base-.14,z),.28,"beam",true,false)
+	for x in [8.3,16.7]: beam(Vector3(x,base-.14,-7.7),Vector3(x,base-.14,.7),.28,"beam",true,false)
+	for t in range(1,8):
+		var q := 8.3+t*1.05
+		for z in [-7.7,.7]: beam(Vector3(q,base,z),peak,.18,"beam",true,false)
+		var qz := -7.7+t*1.05
+		for x in [8.3,16.7]: beam(Vector3(x,base,qz),peak,.18,"beam",true,false)
+	for z in [-6.65,-3.5,-.35]:
+		beam(Vector3(8.35,base-.02,z),Vector3(16.65,base-.02,z),.28,"beam",true,false)
+		for x in [9.1,15.9]:
+			beam(Vector3(x,base,z),Vector3(x+(.55 if x<12.5 else -.55),base+.9,z),.18,"beam",true,false)
+	# Purlins tie neighbouring rafters together above head height.
+	for x in [10.3,14.7]: beam(Vector3(x,base+2.25,-5.7),Vector3(x,base+2.25,-1.3),.22,"beam",true,false)
+	rail(Vector3(11.55,ATTIC_Y,-7.65),Vector3(11.55,ATTIC_Y,-1.2))
+	var light := OmniLight3D.new()
+	light.position = Vector3(13,ATTIC_Y+2,-3.5)
+	light.light_energy = .55
+	light.omni_range = 12
+	add_child(light)
+
 func cylinder(pos: Vector3, top: float, bottom: float, height: float, material_id: String, sides := 12) -> void:
 	var mesh := CylinderMesh.new()
 	mesh.top_radius = top
@@ -443,6 +547,9 @@ func courtyard() -> void:
 func stone_floor(pos: Vector3, size: Vector2) -> void:
 	floor_patches.append({"pos":pos,"size":size})
 	box(pos-Vector3(0,.13,0),Vector3(size.x,.26,size.y),"mortar",true)
+	if pos.y>1:
+		var underside := Masonry.face(pos-Vector3(size.x*.5,.261,size.y*.5),Vector3.RIGHT,Vector3.BACK,Vector3.DOWN,size,int(absf(pos.x*173+pos.z*317))+1439,"floor",true)
+		batch(underside.mesh,Transform3D.IDENTITY,"vault_stone")
 	var surface := Masonry.face(pos-Vector3(size.x*.5,-.004,size.y*.5),Vector3.RIGHT,Vector3.BACK,Vector3.UP,size,int(absf(pos.x*171+pos.y*557+pos.z*313))+1403,"floor",true)
 	batch(surface.mesh,Transform3D.IDENTITY,"stone_floor")
 	stone_count += surface.stones
@@ -489,14 +596,14 @@ func wall(pos: Vector3, width: float, height: float, centers: Array, titles: Arr
 	var opening_height := 2.16
 	for i in range(centers.size()):
 		var center: float = centers[i]
-		var edge := center-half_open
+		var edge := center-half_open-.22
 		if edge>start: wall_piece(pos+basis*Vector3((start+edge)*.5,height*.5,0),Vector3(edge-start,height,.55),angle)
-		wall_piece(pos+basis*Vector3(center,(height+opening_height)*.5,0),Vector3(half_open*2,height-opening_height,.55),angle)
+		wall_piece(pos+basis*Vector3(center,(height+opening_height+.24)*.5,0),Vector3(half_open*2+.44,height-opening_height-.24,.55),angle)
 		for side in [-1,1]:
 			for j in range(5):
 				var stone := Construction.block(Vector3(.22,opening_height/5-.016,.74),.025)
-				batch(stone,Transform3D(basis,pos+basis*Vector3(center+side*(half_open+.08),(j+.5)*opening_height/5,0)),"trim")
-		batch(Construction.block(Vector3(1.65,.24,.76),.03),Transform3D(basis,pos+basis*Vector3(center,2.28,0)),"trim")
+				batch(stone,Transform3D(basis,pos+basis*Vector3(center+side*(half_open+.11),(j+.5)*opening_height/5,0)),"trim")
+		batch(Construction.block(Vector3(1.74,.24,.76),.03),Transform3D(basis,pos+basis*Vector3(center,2.28,0)),"trim")
 		var door := Door.new()
 		door.width = 1.10
 		door.height = 2.10
@@ -509,7 +616,8 @@ func wall(pos: Vector3, width: float, height: float, centers: Array, titles: Arr
 			door.opening_side = 1.0
 		if str(titles[i]).begins_with("Pokoj věže"): tower_room_doors.append(door)
 		doors.append(door)
-		start = center+half_open
+		for side in [-1,1]: collision(Transform3D(basis,pos+basis*Vector3(center+side*(half_open+.11),opening_height*.5,0)),Vector3(.22,opening_height,.55))
+		start = center+half_open+.22
 	if start<width/2: wall_piece(pos+basis*Vector3((start+width/2)*.5,height*.5,0),Vector3(width/2-start,height,.55),angle)
 
 func window_wall(pos: Vector3, width: float, height: float, centers: Array, angle := 0.0) -> void:
@@ -562,18 +670,18 @@ func tiled_plane(origin: Vector3, across: Vector3, slope: Vector3, wooden := fal
 		normal = -normal
 	roof_normals.append(normal)
 	var relief := Shingles.make(start,a.normalized(),slope.normalized(),normal,Vector2(a.length(),slope.length()),false,not wooden)
-	batch(relief.mesh,Transform3D.IDENTITY,"roofscan" if wooden else "clay")
+	batch(RoofClip.outside(relief.mesh),Transform3D.IDENTITY,"roofscan" if wooden else "clay")
 	roof_cells += relief.count
 	var underside := SurfaceTool.new()
 	underside.begin(Mesh.PRIMITIVE_TRIANGLES)
 	Construction.quad(underside,[start-normal*.055,start+a-normal*.055,start+a+slope-normal*.055,start+slope-normal*.055],-normal,Vector2(a.length()*.5,slope.length()*.5))
 	underside.index()
-	batch(underside.commit(),Transform3D.IDENTITY,"wood")
+	batch(RoofClip.outside(underside.commit()),Transform3D.IDENTITY,"wood")
 	var columns := int(ceil(a.length()/.37))
-	beam(start,start+a,.19)
+	roof_beam(start,start+a,.19)
 	for column in range(0,columns,5):
 		var p := start+a.normalized()*(column*a.length()/columns)-normal*.1
-		beam(p,p+slope,.12)
+		roof_beam(p,p+slope,.12)
 
 func roof(pos: Vector3, size: Vector2, rise: float, along_x: bool) -> void:
 	var w := size.x/2
@@ -583,13 +691,13 @@ func roof(pos: Vector3, size: Vector2, rise: float, along_x: bool) -> void:
 		tiled_plane(pos+Vector3(-w,0,d),Vector3(size.x,0,0),Vector3(0,rise,-d))
 		for x in [-w,w]:
 			gable([pos+Vector3(x,0,-d),pos+Vector3(x,rise,0),pos+Vector3(x,0,d)],Vector3(signf(x),0,0))
-		beam(pos+Vector3(-w,rise+.07,0),pos+Vector3(w,rise+.07,0),.17,"tile3")
+		roof_beam(pos+Vector3(-w,rise+.07,0),pos+Vector3(w,rise+.07,0),.17,"tile3")
 	else:
 		tiled_plane(pos+Vector3(-w,0,-d),Vector3(0,0,size.y),Vector3(w,rise,0))
 		tiled_plane(pos+Vector3(w,0,-d),Vector3(0,0,size.y),Vector3(-w,rise,0))
 		for z in [-d,d]:
 			gable([pos+Vector3(-w,0,z),pos+Vector3(0,rise,z),pos+Vector3(w,0,z)],Vector3(0,0,signf(z)))
-		beam(pos+Vector3(0,rise+.07,-d),pos+Vector3(0,rise+.07,d),.17,"tile3")
+		roof_beam(pos+Vector3(0,rise+.07,-d),pos+Vector3(0,rise+.07,d),.17,"tile3")
 
 func hip_roof(pos: Vector3, size: Vector2, rise: float) -> void:
 	var w := size.x*.5
@@ -607,6 +715,11 @@ func hip_roof(pos: Vector3, size: Vector2, rise: float) -> void:
 		var relief := Shingles.make(a,u,v,normal,Vector2(a.distance_to(b),climb.length()),true,true)
 		batch(relief.mesh,Transform3D.IDENTITY,"clay")
 		roof_cells += relief.count
+		var lining := SurfaceTool.new()
+		lining.begin(Mesh.PRIMITIVE_TRIANGLES)
+		Masonry.triangle(lining,a-normal*.07,b-normal*.07,peak-normal*.07,[Vector2.ZERO,Vector2(a.distance_to(b)*.5,0),Vector2(a.distance_to(b)*.25,climb.length()*.5)],-normal,Color.WHITE)
+		lining.index()
+		batch(lining.commit(),Transform3D.IDENTITY,"wood")
 		beam(a,b,.19)
 		beam(a+Vector3.UP*.04,peak+Vector3.UP*.04,.12,"tile3")
 
@@ -615,7 +728,7 @@ func gable(points: Array, normal: Vector3) -> void:
 	var axis: Vector3 = (points[2]-base).normalized()
 	var center: Vector3 = (points[2]+base)*.5
 	var relief := Scanned.make(base,axis,Vector3.UP,normal,Vector2(base.distance_to(points[2]),points[1].y-center.y),heights.stone_wall,2,.055,.08,true)
-	batch(relief.mesh,Transform3D.IDENTITY,"rubble")
+	batch(RoofClip.outside(relief.mesh),Transform3D.IDENTITY,"rubble")
 	relief_cells += relief.cells
 
 func rail(a: Vector3, b: Vector3, opening := false) -> void:
@@ -686,7 +799,7 @@ func gallery() -> void:
 	stair_routes.append({"start":Vector3(6.85,.08,4.41),"mid":Vector3(6.85,2.7,-.08),"turn":Vector3(6.85,y+.1,-4.4),"end":Vector3(6.85,y+.1,-4.8),"exit":Vector3(6.85,y+.1,-6.5)})
 	tiled_plane(Vector3(-17.6,y+3.4,-8.3),Vector3(26,0,0),Vector3(0,-.70,4.95),true)
 	tiled_plane(Vector3(8.15,y+3.4,-6.2),Vector3(0,0,10.8),Vector3(-2.80,-.90,0),true)
-	beam(Vector3(8.15,y+3.22,-6.2),Vector3(8.15,y+3.22,4.6),.28,"beam",false,false)
+	roof_beam(Vector3(8.15,y+3.22,-6.2),Vector3(8.15,y+3.22,4.6),.28)
 	beam(Vector3(5.55,y+2.38,-6.2),Vector3(5.55,y+2.38,4.6),.28,"beam",false,false)
 	for z in [-5.8,-.5,4.0]:
 		beam(Vector3(5.55,0,z),Vector3(5.55,y+2.5,z),.28,"beam",true)
@@ -697,20 +810,20 @@ func gallery() -> void:
 func defensive_walk() -> void:
 	var y := GALLERY_Y
 	floorboards(Vector3(-16.6,y,4.6),Vector2(1.8,24.2),true)
-	floorboards(Vector3(1.25,y,16.6),Vector2(37.5,1.8))
+	floorboards(Vector3(-.05,y,16.6),Vector2(34.9,1.8))
 	rail(Vector3(-15.65,y,-3.31),Vector3(-15.65,y,13.85))
 	rail(Vector3(-15.65,y,13.85),Vector3(-15.415,y,14.24))
-	rail(Vector3(-13.785,y,15.65),Vector3(13.15,y,15.65))
-	rail(Vector3(15.85,y,15.65),Vector3(17.35,y,15.65))
+	rail(Vector3(-13.785,y,15.65),Vector3(7.65,y,15.65))
+	# No guard against the solid east-wing facade.
 	# Cross beams sit below the longitudinal bearers; struts seat in their underside.
 	for z in range(-4,17,3):
 		beam(Vector3(-17.90,y-.49,z),Vector3(-15.50,y-.49,z),.30)
 		beam(Vector3(-17.90,y-1.7,z),Vector3(-15.80,y-.57,z),.30,"beam",false,false)
-	for x in [-16.0,-13.0,-10.0,-7.0,-4.7,4.7,7.0,10.0,13.0,16.0,19.0]:
+	for x in [-16.0,-13.0,-10.0,-7.0,-4.7,4.7,7.0,10.0,13.0,16.0]:
 		beam(Vector3(x,y-.49,17.90),Vector3(x,y-.49,15.50),.30)
 		beam(Vector3(x,y-1.7,17.90),Vector3(x,y-.57,15.80),.30,"beam",false,false)
 	for x in [-17.2,-15.9]: beam(Vector3(x,y-.19,-7.5),Vector3(x,y-.19,17.3),.30,"beam",false,false)
-	for z in [16.0,17.2]: beam(Vector3(-17.5,y-.19,z),Vector3(20,y-.19,z),.30,"beam",false,false)
+	for z in [16.0,17.2]: beam(Vector3(-17.5,y-.19,z),Vector3(17.3,y-.19,z),.30,"beam",false,false)
 	flight(Vector3(-14.6,0,6.56),Vector3.BACK,25,.20,.32,1.65)
 	floorboards(Vector3(-15.55,y,15.05),Vector2(3.90,1.9),true)
 	rail(Vector3(-13.785,y,14.24),Vector3(-13.785,y,15.65))
@@ -720,8 +833,12 @@ func defensive_walk() -> void:
 	stone_floor(Vector3(1.275,y,-18.70),Vector2(37.65,2.80))
 	stone_floor(Vector3(18.75,0,-.65),Vector2(2.7,37.3))
 	stone_floor(Vector3(1.275,0,-18.70),Vector2(37.65,2.80))
-	vaulted_ceiling(Vector3(18.75,0,-.65),Vector2(2.7,37.3),true)
-	vaulted_ceiling(Vector3(1.275,0,-18.70),Vector2(35,2.80))
+	# Barrel vaults terminate in stone portals before the shared groin-vault corner.
+	vaulted_ceiling(Vector3(18.7,0,.35),Vector2(2.80,35.3),true)
+	vaulted_ceiling(Vector3(-.075,0,-18.70),Vector2(34.95,2.80))
+	corridor_corner()
+	vault_portal(Vector3(18.7,0,-17.3),2.80,0.0)
+	vault_portal(Vector3(17.4,0,-18.7),2.80,PI/2)
 	# Building walls already protect the rear walk; guards only border open courtyard edges.
 	wall_routes = [Vector3(-16.5,y+.1,-4),Vector3(-16.5,y+.1,16.6),Vector3(0,y+.1,16.6),Vector3(18.75,y+.1,16.6),Vector3(18.75,y+.1,-18.75),Vector3(-16.4,y+.1,-18.75)]
 	rooms.append({"name":"Kamenný ochoz za věží","rect":Rect2(17.35,-20.1,2.7,37.6)})
@@ -737,8 +854,8 @@ func build_tower() -> void:
 		if index==1: wall(Vector3(17,y,-3.5),9,h,[0.0],["Východní hradby"],PI/2)
 		else: wall_piece(Vector3(17,y+h*.5,-3.5),Vector3(9,h,.6),PI/2)
 		if index>=2:
-			window_wall(Vector3(12.5,y,-8),9,h,[0.0])
-			window_wall(Vector3(12.5,y,1),9,h,[0.0])
+			window_wall(Vector3(12.5,y,-8),9,h,[1.65])
+			window_wall(Vector3(12.5,y,1),9,h,[1.65])
 	stone_floor(Vector3(12.5,0,-3.5),Vector2(9,9))
 	wall_finish_override = "plaster"
 	for index in range(4):
@@ -752,8 +869,8 @@ func build_tower() -> void:
 		if floor>0:
 			stone_floor(Vector3(14.15,y,-3.5),Vector2(5.05,8.2))
 			stone_floor(Vector3(9.95,y,-.18),Vector2(3.46,1.9))
-		if floor<3:
-			var next: float = TOWER_LEVELS[floor+1]
+		if floor<=3:
+			var next: float = TOWER_LEVELS[floor+1] if floor<3 else ATTIC_Y
 			var half: float = (next-y)*.5
 			var count := 13 if floor==0 else 9
 			var run := 4.32/(count-1)
@@ -764,8 +881,13 @@ func build_tower() -> void:
 			stair_routes.append({"start":Vector3(9.12,y+.08,-.2),"mid":Vector3(9.12,y+half+.1,-6.05),"turn":Vector3(10.82,y+half+.1,-6.05),"end":Vector3(10.82,next+.1,-.35),"exit":Vector3(14,next+.1,-.35)})
 	stone_floor(Vector3(16.55,GALLERY_Y,-3.5),Vector2(1.9,2.7))
 	# No railing against a solid wall at the eastern doorway.
-	floorboards(Vector3(12.5,14.61,-3.5),Vector2(9,9))
-	hip_roof(Vector3(12.5,14.67,-3.5),Vector2(10,10),3.2)
+	# Attic floor keeps the stairwell opening; beams stop at its trimmed edge.
+	floorboards(Vector3(14.15,ATTIC_Y,-3.5),Vector2(5.05,8.4))
+	floorboards(Vector3(9.95,ATTIC_Y,-.18),Vector2(3.46,1.9))
+	for z in [-7.45,-6.0,-4.5,-3.0,-1.5,.45]:
+		beam(Vector3(11.58,14.67,z),Vector3(17.05,14.67,z),.30,"beam",true,false)
+	beam(Vector3(11.58,14.67,-7.65),Vector3(11.58,14.67,.85),.30,"beam",true,false)
+	attic_roof()
 	rooms.append({"name":"Věž","rect":Rect2(8,-8,9,9)})
 
 func vaulted_ceiling(pos: Vector3, size: Vector2, across_x := false) -> void:

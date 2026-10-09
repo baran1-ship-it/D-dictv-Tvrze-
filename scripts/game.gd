@@ -183,7 +183,7 @@ func update_target() -> void:
 		var floor := 0
 		for i in range(1,world.TOWER_LEVELS.size()):
 			if player.position.y+.15>=world.TOWER_LEVELS[i]: floor = i
-		place += " · "+("přízemí" if floor==0 else str(floor)+". patro")
+		place += " · "+("půda" if player.position.y+.15>=world.ATTIC_Y else "přízemí" if floor==0 else str(floor)+". patro")
 	hud.text = "DĚDICTVÍ TVRZE\n"+place
 	controls.can_use = is_instance_valid(target_door) and not target_door.busy
 	controls.use_label = "ZAVŘÍT" if is_instance_valid(target_door) and target_door.opened else "OTEVŘÍT"
