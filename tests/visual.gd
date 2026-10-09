@@ -19,9 +19,7 @@ func run() -> void:
 	game.message_time = 0
 	game.hint.text = ""
 	await shot("courtyard.png",Vector3(-2,.1,14.8),-.22,.28)
-	await shot("east-wing.png",Vector3(-3,.1,8),-1.25,.20)
 	await shot("wall-walk.png",Vector3(-16.5,5.1,8),3.25,-.06)
-	await shot("rear-walk.png",Vector3(18.75,5.1,9),0,.08)
 	await shot("stairs-west.png",Vector3(-2.5,.1,2),.95,.22)
 	await shot("stairs-tower.png",Vector3(1,.1,9),-.65,.28)
 	await shot("gallery-join.png",Vector3(-14.7,5.1,-6.4),1.57,-.03)
@@ -31,6 +29,8 @@ func run() -> void:
 	await shot("vault-palace.png",Vector3(-11,.1,-11),0,.82)
 	await shot("vault-east.png",Vector3(12,.1,10),.4,.9)
 	await shot("double-gate.png",Vector3(0,.1,12),PI,.28)
+	await shot("joint-west.png",Vector3(-14.7,5.1,-4.1),1.57,-.48)
+	await shot("joint-gate.png",Vector3(-16.3,5.1,15),-1.57,-.48)
 	var south = game.world.doors.filter(func(d): return d.title=="Přístup na hradby")[0]
 	south.toggle(Vector3(14.5,5.1,14.1))
 	await create_timer(.8).timeout

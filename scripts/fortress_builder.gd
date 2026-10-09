@@ -577,7 +577,7 @@ func flight(first: Vector3, direction: Vector3, count: int, rise: float, run: fl
 	for side in [-1,1]:
 		beam(first+across*side*(width/2-.10)-Vector3(0,.12,0),last+across*side*(width/2-.10)-Vector3(0,.16,0),.15)
 		if side not in guard_sides: continue
-		rail(first+across*side*(width/2-.01)+Vector3(0,rise,0),last+across*side*(width/2-.01),true)
+		rail(first+across*side*(width/2-.01),last+across*side*(width/2-.01),true)
 	return last
 
 func gallery() -> void:
@@ -666,15 +666,16 @@ func build_tower() -> void:
 		if floor>0:
 			stone_floor(Vector3(14.15,y,-3.5),Vector2(5.05,8.2))
 			stone_floor(Vector3(9.95,y,-.18),Vector2(3.46,1.9))
-			rail(Vector3(11.68,y,-7.75),Vector3(11.68,y,-1.12))
+			rail(Vector3(11.56,y,-7.75),Vector3(11.56,y,-.9))
 		if floor<3:
 			var next: float = TOWER_LEVELS[floor+1]
 			var half: float = (next-y)*.5
 			var count := 13 if floor==0 else 9
 			var run := 4.32/(count-1)
-			flight(Vector3(9.12,y,-.9),Vector3.FORWARD,count,half/count,run,1.5)
+			flight(Vector3(9.12,y,-.9),Vector3.FORWARD,count,half/count,run,1.5,[-1])
 			floorboards(Vector3(9.93,y+half,-6.35),Vector2(3.40,2.82))
-			rail(Vector3(11.63,y+half,-7.76),Vector3(11.63,y+half,-4.94))
+			rail(Vector3(11.56,y+half,-7.76),Vector3(11.56,y+half,-5.22))
+			rail(Vector3(9.86,y+half,-5.22),Vector3(10.08,y+half,-5.22))
 			flight(Vector3(10.82,y+half,-5.22),Vector3.BACK,count,half/count,run,1.5)
 			stair_routes.append({"start":Vector3(9.12,y+.08,-.2),"mid":Vector3(9.12,y+half+.1,-6.05),"turn":Vector3(10.82,y+half+.1,-6.05),"end":Vector3(10.82,next+.1,-.35),"exit":Vector3(14,next+.1,-.35)})
 	stone_floor(Vector3(16.55,GALLERY_Y,-3.5),Vector2(1.9,2.7))
