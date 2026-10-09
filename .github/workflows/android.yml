@@ -48,23 +48,36 @@ jobs:
           set -euo pipefail
           timeout 120s godot --headless --editor --import --quit 2>&1 | tee /tmp/import.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script' /tmp/import.log; then exit 1; fi
-          XDG_DATA_HOME="$RUNNER_TEMP/game-test-data" timeout 60s godot --headless --script res://tests/smoke.gd 2>&1 | tee /tmp/tests.log
-          grep -q 'PASS: chunk streaming, arrow collision, tower access, sleep save and reload' /tmp/tests.log
+          XDG_DATA_HOME="$RUNNER_TEMP/game-test-data" timeout 120s godot --headless --script res://tests/smoke.gd 2>&1 | tee /tmp/tests.log
+          grep -q 'PASS: exploration, multitouch, controller mapping, animated doors, collision, gallery and three tower floors' /tmp/tests.log
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/dedictvi-signing
+          key: dedictvi-exploration-debug-key-v1
       - name: Configure Android export and debug signing
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$XDG_CONFIG_HOME/godot" build
-          keytool -genkeypair -keystore "$RUNNER_TEMP/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 10000
+          mkdir -p "$XDG_CONFIG_HOME/godot" "$RUNNER_TEMP/dedictvi-signing" build
+          if [ ! -f "$RUNNER_TEMP/dedictvi-signing/debug.keystore" ]; then
+            keytool -genkeypair -keystore "$RUNNER_TEMP/dedictvi-signing/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 10000
+          fi
           cat > "$XDG_CONFIG_HOME/godot/editor_settings-4.6.tres" <<SETTINGS
           [gd_resource type="EditorSettings" format=3]
           [resource]
           export/android/android_sdk_path = "$ANDROID_HOME"
           export/android/java_sdk_path = "$JAVA_HOME"
-          export/android/debug_keystore = "$RUNNER_TEMP/debug.keystore"
+          export/android/debug_keystore = "$RUNNER_TEMP/dedictvi-signing/debug.keystore"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           SETTINGS
+      - name: Render review screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 90s xvfb-run -a godot --rendering-method gl_compatibility --path . --resolution 1280x720 --script res://tests/visual.gd 2>&1 | tee /tmp/visual.log
+          test -s build/courtyard.png
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/visual.log; then exit 1; fi
       - name: Export APK
         shell: bash
         run: |
@@ -79,9 +92,11 @@ jobs:
           sha256sum build/dedictvi-tvrze.apk > build/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: dedictvi-tvrze-android
+          name: dedictvi-tvrze-prochazka
           path: |
             build/dedictvi-tvrze.apk
             build/SHA256SUMS.txt
+            build/courtyard.png
+            build/door-hand.png
           if-no-files-found: error
           retention-days: 14

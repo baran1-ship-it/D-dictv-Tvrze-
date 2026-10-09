@@ -1,33 +1,26 @@
-# Dědictví tvrze — prototyp 0.1
+# Dědictví tvrze — procházka 0.2
 
-Vlastní středověká hra z první osoby pro budoucí Android verzi. Tvrz je první oblast plánovaného otevřeného světa. Prototyp má jednoduchou blokovou grafiku; nejde o dokončenou mobilní hru.
+Offline Android prototyp pro průzkum české středověké tvrze z první osoby. Výtvarný směr vychází ze schválené realistické předlohy inspirované Suchdolem; současná scéna je původní model, nikoli kopie herních assetů KCD2. Grafika využívá nové obrazové materiály kamene a dubového dřeva, reliéf povrchů, sloučené statické modely, stíny a přirozenou oblohu. Kvalita ani výkon nebyly dosud potvrzeny na fyzickém tabletu.
 
-## Spuštění
+## První procházková verze
 
-Otevřete `project.godot` v Godotu 4.6.3 a stiskněte F6/F5. Z příkazové řádky: `godot --path cesta/k/dedictvi-tvrze`.
+- Propojený severní palác s kovárnou, kuchyní a hodovní síní; pavlač a obytné východní křídlo.
+- Věž: přízemí a tři patra, vnitřní dvojramenné schodiště s podestami.
+- Jediná interakce: 17 dveří s kováním. Ruka dosáhne na madlo, dveře se otevřou nebo zavřou. Zavření se odmítne, stojí-li hráč přímo v průchodu.
+- Bez luku, terčů, bodování, vylepšování a ukládání spánkem. Nábytek je pouze součást prostředí.
 
-WASD: chůze, myš: rozhled, E: interakce. Podržení levého tlačítka natáhne luk, uvolnění vypustí šíp. Esc uvolní kurzor. Dotyk: levá část displeje ovládá pohyb, pravá rozhled; AKCE používá předmět, LUK se drží a pustí. Schodiště do ložnice začíná u jižní hradby před věží.
+## Ovládání
 
-## Implementováno
+Tablet: levý viditelný joystick ovládá chůzi, tažení vpravo rozhled, tlačítko DVEŘE interakci, horní tlačítko pauzu. Současný pohyb, rozhled a interakce mají oddělené dotyky.
 
-- Nádvoří, kovárna, kuchyň, hodovní síň s krbem, věž s přístupnou ložnicí.
-- Chůze, kolize, schody a dotykové ovládání.
-- Luk, nátah, gravitace šípů, kolize s terči, počítání zásahů.
-- Jedno vylepšení kovárny: pracovní stůl bez materiálové ekonomiky.
-- Uložení spánkem, posun čísla dne, obnovení u postele po spuštění.
-- Atomické přepsání uložené hry přes dočasný soubor a záloha předchozího spánku.
-- Načítání a uvolňování pěti oblastí podle vzdálenosti s hysterezí.
+Xbox ovladač: levá páčka chůze, pravá rozhled, A dveře, Menu pauza, A/B návrat z pauzy. Podpora využívá standardní mapování Godotu a Androidu; skutečné Bluetooth/USB spojení je třeba ověřit na zařízení. Ovládání se přepne na dotyk při použití obrazovky. Odpojení ovladače zastaví pohyb.
 
-## Zatím není hotovo
+PC: WASD, myš, E nebo levé tlačítko, Esc pauza.
 
-Android APK, test na telefonu, inventář, kování a vaření, vyzvedávání šípů, animace spánku, denní cyklus, tři pozice uložení, přerušovací uložení, gamepad, zvuky, stahování balíčků a průchod za bránu. Záloha je zatím určena k ruční obnově. Oheň je statická geometrie a světlo.
+## Sestavení a ověření
 
-## Android
+Godot 4.6.3, renderer Compatibility. GitHub Actions importuje scénu, testuje skutečné kolize, schody a animované dveře, prověřuje dotyky a mapování tlačítek, vytváří dvě kontrolní fotografie běžící scény a ověřuje podpis APK. Výstup je `dedictvi-tvrze-prochazka`.
 
-Projekt používá renderer Compatibility a orientaci na šířku. Pro export potřebujete Android SDK, JDK a exportní šablony pro Godot 4.6.3. V Godotu nastavte Android export preset, unikátní identifikátor aplikace a SDK cestu; pro zkušební instalaci exportujte debug APK. Distribuční AAB vyžaduje vlastní podpisový klíč. APK zatím nebylo sestaveno; mobilní výkon a ovládání nejsou ověřené na zařízení.
+Procházka používá samostatné ID `cz.dedictvitvrze.prochazka`, aby první novou verzi bylo možné instalovat vedle původního prototypu. Debug podpisový klíč pro následující sestavení se uchovává v cache Actions. Jde o testovací podpis, nikoli distribuční klíč pro obchod.
 
-## Ověření
-
-`godot --headless --path . --script res://tests/smoke.gd`
-
-Test používejte s odděleným `XDG_DATA_HOME`, aby nepřepsal vaši rozehranou hru. Ověřuje zásah letícím šípem, průchod schodištěm, dosažitelnost postele, uložení a obnovení postupu a načítání/uvolňování oblastí.
+Obrazové materiály vznikly generováním obrázků pro tento projekt. Kód vlastní scény a ovládání je v `scripts/fortress_builder.gd`, `fortress_door.gd`, `exploration_controls.gd` a `game.gd`. Staré skripty pro ukládání a streaming nejsou v procházkové scéně aktivní.
