@@ -36,6 +36,9 @@ func run() -> void:
 	await shot("ordinary-jamb.png",Vector3(-8.2,.1,-6.8),.32,.52)
 	await shot("tower-jamb.png",Vector3(12.2,8.36,-.35),1.57,.4)
 
+	await shot("rubble-detail.png",Vector3(18.75,5.1,9.2),-1.57,-.16)
+	await shot("paving-detail.png",Vector3(1,.1,11),0,-.7)
+	await shot("plaster-detail.png",Vector3(-1,5.1,-6.6),.0,.16)
 	print("GEOMETRY: masonry/paving mesh cells=",game.world.relief_cells," individual shingles=",game.world.roof_cells," closed stones=",game.world.stone_count," draw calls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	game.queue_free()
 	await process_frame

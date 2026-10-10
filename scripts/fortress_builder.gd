@@ -36,6 +36,7 @@ var windows: Array = []
 var rng := RandomNumberGenerator.new()
 
 func source_fingerprint() -> String:
+	if not OS.has_feature("editor"): return FileAccess.get_file_as_string("res://assets/kit/source-fingerprint.txt").strip_edges()
 	var source := ""
 	for file in ["fortress_builder.gd","masonry_mesh.gd","construction_mesh.gd","blender_kit.gd","shingle_mesh.gd","fortress_door.gd","roof_clip.gd","vault_mesh.gd"]: source += FileAccess.get_file_as_string("res://scripts/"+file)
 	source += FileAccess.get_file_as_string("res://assets/kit/fortress-kit.json")

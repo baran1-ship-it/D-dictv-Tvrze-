@@ -50,6 +50,8 @@ jobs:
           set -euo pipefail
           timeout 120s godot --headless --editor --import --quit 2>&1 | tee /tmp/import.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script' /tmp/import.log; then exit 1; fi
+          timeout 240s godot --headless --script res://tests/bake.gd 2>&1 | tee /tmp/bake.log
+          grep -q 'PASS: baked Blender architecture' /tmp/bake.log
           XDG_DATA_HOME="$RUNNER_TEMP/game-test-data" timeout 180s godot --headless --script res://tests/smoke.gd 2>&1 | tee /tmp/tests.log
           grep -q 'PASS: exploration, multitouch, controller mapping, animated doors, collision, gallery and three tower floors' /tmp/tests.log
       - uses: actions/cache@v4

@@ -16,7 +16,9 @@ func run() -> void:
 	assembled.name = "Fortress012"
 	root.add_child(assembled)
 	for key in ["rooms","floor_patches","rail_routes","stair_routes","wall_routes","windows","vaults","mats","relief_cells","roof_cells","stone_count","roof_normals"]: assembled.set_meta(key,world.get(key))
-	assembled.set_meta("source_fingerprint",world.source_fingerprint())
+	var fingerprint: String = world.source_fingerprint()
+	FileAccess.open("res://assets/kit/source-fingerprint.txt",FileAccess.WRITE).store_string(fingerprint)
+	assembled.set_meta("source_fingerprint",fingerprint)
 	assembled.set_meta("blender_variants",kit.uses.size())
 	for child in world.get_children():
 		world.remove_child(child)
