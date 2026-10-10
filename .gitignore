@@ -6,3 +6,5 @@ export_credentials.cfg
 .ci-config/
 .ci-cache/
 build/
+
+assets/kit/assembled.scn

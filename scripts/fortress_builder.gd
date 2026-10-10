@@ -35,10 +35,31 @@ var roof_normals: Array[Vector3] = []
 var windows: Array = []
 var rng := RandomNumberGenerator.new()
 
+func source_fingerprint() -> String:
+	var source := ""
+	for file in ["fortress_builder.gd","masonry_mesh.gd","construction_mesh.gd","blender_kit.gd","shingle_mesh.gd","fortress_door.gd","roof_clip.gd","vault_mesh.gd"]: source += FileAccess.get_file_as_string("res://scripts/"+file)
+	source += FileAccess.get_file_as_string("res://assets/kit/fortress-kit.json")
+	return source.sha256_text()
+
 func build() -> void:
+	if ResourceLoader.exists("res://assets/kit/assembled.scn"):
+		var ready_world: Node3D = load("res://assets/kit/assembled.scn").instantiate()
+		if ready_world.get_meta("source_fingerprint","")==source_fingerprint():
+			add_child(ready_world)
+			static_body = ready_world.get_node("ArchitectureCollision")
+			for key in ["rooms","floor_patches","rail_routes","stair_routes","wall_routes","windows","vaults","mats","relief_cells","roof_cells","stone_count"]: set(key,ready_world.get_meta(key))
+			roof_normals.assign(ready_world.get_meta("roof_normals"))
+			for node in ready_world.find_children("*","Node3D",true,false):
+				if node.get_script()==Door:
+					doors.append(node)
+					if node.title.begins_with("Pokoj věže"): tower_room_doors.append(node)
+			return
+		ready_world.free()
+	print("ASSEMBLY: building Blender architecture")
 	rng.seed = 1403
 	make_materials()
 	static_body = StaticBody3D.new()
+	static_body.name = "ArchitectureCollision"
 	add_child(static_body)
 	box(Vector3(0,-.45,0),Vector3(170,.8,170),"grass",true)
 	box(Vector3(0,-.08,0),Vector3(36,.16,36),"mortar",true)
@@ -124,6 +145,12 @@ func build() -> void:
 		instance.material_override = mats[key]
 		add_child(instance)
 
+	batches.clear()
+	repeats.clear()
+	mesh_cache.clear()
+	preload("res://scripts/blender_kit.gd").cached.clear()
+	print("ASSEMBLY complete: ",stone_count," stones; ",roof_cells," roof pieces")
+
 func plain(color: Color, roughness := .9, metallic := 0.0) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
@@ -199,23 +226,23 @@ func make_materials() -> void:
 	mats.rock3d.uv1_scale = Vector3.ONE
 	stone_atlas(mats.rock3d)
 	mats.stone_floor = mats.rock3d.duplicate()
-	mats.stone_floor.albedo_color = Color("a49d8e")
+	mats.stone_floor.albedo_color = Color("c6bcaa")
 	mats.towerstone = mats.rubble.duplicate()
 	mats.towerstone.albedo_color = Color("c8b99f")
 	mats.rubble_edge = mats.rubble.duplicate()
 	mats.rubble_edge.uv1_triplanar = true
 	mats.rubble_edge.uv1_world_triplanar = true
 	mats.rubble_edge.uv1_scale = Vector3.ONE*.5
-	mats.mortar = plain(Color("756e60"))
+	mats.mortar = plain(Color("968b73"))
 	mats.vault_stone = mats.rock3d.duplicate()
 	mats.vault_stone.vertex_color_use_as_albedo = true
 	mats.vault_stone.albedo_color = Color("b8b3a6")
 	mats.palace_rock = mats.rock3d.duplicate()
-	mats.palace_rock.albedo_color = Color("b8b3a6")
+	mats.palace_rock.albedo_color = Color("d4c6ae")
 	mats.tower_rock = mats.rock3d.duplicate()
-	mats.tower_rock.albedo_color = Color("b8b3a6")
+	mats.tower_rock.albedo_color = Color("d0c4af")
 	mats.path_rock = mats.rock3d.duplicate()
-	mats.path_rock.albedo_color = Color("b5ac98")
+	mats.path_rock.albedo_color = Color("cdbda2")
 	mats.path_rock.uv1_scale = Vector3.ONE
 	mats.earth = earth_material()
 	mats.clay = plain(Color("a97451"),.94)
@@ -224,6 +251,7 @@ func make_materials() -> void:
 	mats.plaster.uv1_triplanar = true
 	mats.plaster.uv1_world_triplanar = true
 	mats.plaster.uv1_scale = Vector3.ONE*.55
+	mats.plaster.vertex_color_use_as_albedo = true
 	var ends := Image.create(128,128,false,Image.FORMAT_RGB8)
 	for y in range(128):
 		for x in range(128):
@@ -254,6 +282,7 @@ func make_materials() -> void:
 	mats.tile3.albedo_color = Color("6b6152")
 
 func batch(mesh: Mesh, transform: Transform3D, material_id: String) -> void:
+	if mesh.get_surface_count()==0: return
 	if mesh_cache.has(material_id) and mesh==mesh_cache[material_id]:
 		if not repeats.has(material_id):
 			repeats[material_id] = []
@@ -282,10 +311,10 @@ func box(pos: Vector3, size: Vector3, material_id: String, solid := false) -> vo
 
 func timber(pos: Vector3, size: Vector3, solid := false, material_id := "beam", along := Vector3.UP, show_ends := true) -> void:
 	var basis := Basis(Quaternion(Vector3.UP,along.normalized()))
-	var variant := int(absf(pos.x*7+pos.z*11+pos.y*3))%5
+	var variant := int(absf(pos.x*7+pos.z*11+pos.y*3))%12
 	var key := str(size)+"/timber/"+str(variant)
 	if not mesh_cache.has(key):
-		mesh_cache[key] = Construction.block(size,.012,true,Vector2(variant*.17,variant*.13))
+		mesh_cache[key] = Construction.block(size,.012,true,Vector2(variant*.17,variant*.13),0.0,variant)
 	batch(mesh_cache[key],Transform3D(basis,pos),material_id)
 	if show_ends and material_id in ["wood","beam","door"]:
 		var cap_key := key+"/ends"
@@ -318,7 +347,7 @@ func building_corners() -> void:
 		for row in range(rows):
 			var h := height/rows
 			var size := Vector3(.84 if row%2==0 else .78,h-.013,.78 if row%2==0 else .84)
-			batch(Construction.block(size,.016),Transform3D(Basis.IDENTITY,corner+Vector3.UP*((row+.5)*h)),"trim")
+			batch(Construction.block(size,.016,false,Vector2.ZERO,0.0,row),Transform3D(Basis.IDENTITY,corner+Vector3.UP*((row+.5)*h)),"trim")
 
 func barrel_height(offset: float, span: float) -> float:
 	var half := span*.5
@@ -615,17 +644,19 @@ func wall_piece(pos: Vector3, size: Vector3, angle := 0.0) -> void:
 		# Closed return faces prevent exposed grey strips at building corners.
 		var f: Array = faces[i]
 		var origin: Vector3 = pos+basis*f[0]
-		var stone := Masonry.face(origin,basis*f[1],basis*f[2],basis*f[3],f[4],int(absf(pos.x*131+pos.z*193+pos.y*557))+i*47+1403,style)
+		var sample: Vector3 = origin+basis*f[1]*f[4].x*.5+basis*f[3]*.12
+		var inside := (sample.z>-16.75 and sample.z< -8.25 and absf(sample.x)<16.75) or (sample.x>8.25 and sample.x<16.75 and sample.z>1.25 and sample.z<14.75)
+		var rear := sample.z< -17.2 or sample.x>17.2
+		var min_y := 5.0 if (inside or rear) and style=="palace" else -100.0
+		if wall_finish_override=="plaster": min_y = -100.0
+		var covered := style!="curtain" or wall_finish_override=="plaster"
+		var interior := inside or wall_finish_override=="plaster"
+		var stone := Masonry.face(origin,basis*f[1],basis*f[2],basis*f[3],f[4],int(absf(pos.x*131+pos.z*193+pos.y*557))+i*47+1403,style,false,covered,interior,min_y)
 		batch(stone.mesh,Transform3D.IDENTITY,material_id)
 		stone_count += stone.stones
 		relief_cells += stone.stones*6
-		if style=="palace" or wall_finish_override=="plaster":
-			var sample: Vector3 = origin+basis*f[1]*f[4].x*.5+basis*f[3]*.12
-			var inside := (sample.z>-16.75 and sample.z< -8.25 and absf(sample.x)<16.75) or (sample.x>8.25 and sample.x<16.75 and sample.z>1.25 and sample.z<14.75)
-			var rear := sample.z< -17.2 or sample.x>17.2
-			var min_y := 5.0 if inside or rear else -100.0
-			if wall_finish_override=="plaster": min_y = -100.0
-			var lime := Masonry.plaster(origin+basis*f[3]*.056,basis*f[1],basis*f[2],basis*f[3],f[4],i==1 and wall_finish_override!="plaster",min_y)
+		if covered:
+			var lime := Masonry.plaster(origin+basis*f[3]*.065,basis*f[1],basis*f[2],basis*f[3],f[4],interior,min_y)
 			if lime.get_surface_count()>0: batch(lime,Transform3D.IDENTITY,"plaster")
 
 func wall(pos: Vector3, width: float, height: float, centers: Array, titles: Array, angle := 0.0) -> void:
@@ -765,10 +796,16 @@ func hip_roof(pos: Vector3, size: Vector2, rise: float) -> void:
 func gable(points: Array, normal: Vector3) -> void:
 	var base: Vector3 = points[0]
 	var axis: Vector3 = (points[2]-base).normalized()
-	var center: Vector3 = (points[2]+base)*.5
-	var relief := Scanned.make(base,axis,Vector3.UP,normal,Vector2(base.distance_to(points[2]),points[1].y-center.y),heights.stone_wall,2,.055,.08,true)
-	batch(RoofClip.outside(relief.mesh),Transform3D.IDENTITY,"rubble")
-	relief_cells += relief.cells
+	var width := base.distance_to(points[2])
+	var rise: float = points[1].y-base.y
+	var core := SurfaceTool.new()
+	core.begin(Mesh.PRIMITIVE_TRIANGLES)
+	Masonry.triangle(core,points[0],points[1],points[2],[Vector2.ZERO,Vector2(width*.5,rise),Vector2(width,0)],normal,Color.WHITE)
+	core.index()
+	batch(RoofClip.outside(core.commit()),Transform3D.IDENTITY,"mortar")
+	var relief := Masonry.face(base,axis,Vector3.UP,normal,Vector2(width,rise),int(absf(base.x*713+base.z*193)),"palace",false,false,false,-100.0,true)
+	batch(RoofClip.outside(relief.mesh),Transform3D.IDENTITY,"palace_rock")
+	stone_count += relief.stones
 
 func rail(a: Vector3, b: Vector3, opening := false) -> void:
 	if a.distance_to(b)<.01: return
@@ -966,9 +1003,6 @@ func gate_wall(height: float) -> void:
 	# Clear wall areas beside both jambs are reserved for future torch sockets.
 
 func details() -> void:
-	for y in [GALLERY_Y]:
-		box(Vector3(-4.6,y+1.9,-16.59),Vector3(5,2.65,.055),"plaster")
-		box(Vector3(4,y+1.9,-16.59),Vector3(3,2.65,.055),"plaster")
 	for pos in [Vector3(-11,2,-14),Vector3(0,2,-14),Vector3(11,2,-14),Vector3(14,5,-4),Vector3(14,9,-4),Vector3(14,12,-4),Vector3(13,2,9),Vector3(13,5.5,9)]:
 		var light := OmniLight3D.new()
 		light.position = pos

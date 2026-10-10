@@ -1,4 +1,5 @@
 extends RefCounted
+const Kit = preload("res://scripts/blender_kit.gd")
 const Masonry = preload("res://scripts/masonry_mesh.gd")
 
 # Every shingle has a projecting butt edge and thickness; adjoining rows overlap.
@@ -23,6 +24,11 @@ static func make(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size:
 				poly = Masonry.clip(poly,Vector2(-1,size.x/(2*size.y)),0)
 				poly = Masonry.clip(poly,Vector2(1,size.x/(2*size.y)),size.x)
 			if poly.size()>=3:
+				if poly.size()==4 and poly[0]==Vector2(a,y) and poly[1]==Vector2(b,y) and poly[2]==Vector2(b,top) and poly[3]==Vector2(a,top):
+					Kit.emit(s,"tile" if clay else "shingle",rng.randi(),Transform3D(Basis(u*(b-a),v*(top-y),normal*.07),origin+u*(a+b)*.5+v*(y+top)*.5+normal*.012),Color.WHITE,Vector2.ZERO,Vector2(.027,(top-y)*.6))
+					count += 1
+					x += width
+					continue
 				var face: Array[Vector3] = []
 				var back: Array[Vector3] = []
 				var uv: Array[Vector2] = []

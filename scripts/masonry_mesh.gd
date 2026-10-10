@@ -23,73 +23,44 @@ static func triangle(s: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, uv: Arr
 		s.set_uv(uv[i])
 		s.add_vertex(vertices[i])
 
-static func face(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size: Vector2, seed_value: int, style := "curtain", paving := false) -> Dictionary:
+static func face(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size: Vector2, seed_value: int, style := "curtain", paving := false, covered := false, interior := false, min_y := -100.0, triangular := false) -> Dictionary:
+	var Kit = preload("res://scripts/blender_kit.gd")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	var spacing := Vector2(.43,.29) if style=="curtain" else Vector2(.60,.39)
-	if style=="palace": spacing = Vector2(.37,.28)
-	if paving: spacing = Vector2(.38,.31) if style=="path" else Vector2(.56,.44)
-	spacing *= .90+float(abs(seed_value)%17)*.014
-	var nx := maxi(1,int(ceil(size.x/spacing.x)))
-	var ny := maxi(1,int(ceil(size.y/spacing.y)))
-	var sites: Array[Vector2] = []
-	for j in range(ny):
-		for i in range(nx):
-			sites.append(Vector2((i+.5+rng.randf_range(-.44,.44))*size.x/nx,(j+.5+rng.randf_range(-.44,.44))*size.y/ny))
-	var s := SurfaceTool.new()
-	s.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var stones := 0
-	for j in range(ny):
-		for i in range(nx):
-			var site := sites[j*nx+i]
-			var poly: Array = [Vector2.ZERO,Vector2(size.x,0),size,Vector2(0,size.y)]
-			for y in range(maxi(0,j-2),mini(ny,j+3)):
-				for x in range(maxi(0,i-2),mini(nx,i+3)):
-					var other := sites[y*nx+x]
-					if other==site: continue
-					poly = clip(poly,other-site,(other.length_squared()-site.length_squared())*.5)
-			if poly.size()<3: continue
-			if paving and style=="path":
-				var world := origin+u*site.x+v*site.y
-				if not yard_path(world): continue
-			var tile := rng.randi_range(0,3)
-			var phase := Vector2((tile%2)*.5,(tile/2)*.5)+Vector2(rng.randf_range(.015,.08),rng.randf_range(.015,.08))
-			var depth := rng.randf_range(.014,.038) if not paving else rng.randf_range(.004,.012)
-			var shade := rng.randf_range(.83,1.0)
-			var tint := Color(shade,shade*rng.randf_range(.96,1.01),shade*rng.randf_range(.91,.98))
-			if not paving and origin.y+site.y<.48: tint *= .76
-			var back: Array[Vector3] = []
-			var rim: Array[Vector3] = []
-			var front: Array[Vector3] = []
-			var tex: Array[Vector2] = []
-			for p in poly:
-				var edge: Vector2 = site+(p-site)*rng.randf_range(.95,.975)
-				back.append(origin+u*edge.x+v*edge.y-normal*.015)
-				rim.append(origin+u*edge.x+v*edge.y+normal*depth*.45)
-				var inset: Vector2 = site+(edge-site)*.91
-				front.append(origin+u*inset.x+v*inset.y+normal*(depth+(rng.randf_range(-.004,.004) if paving else rng.randf_range(-.012,.012))))
-				tex.append((edge-site)*.30+Vector2(.20,.20)+phase)
-			var center := origin+u*site.x+v*site.y+normal*(depth+.007)
-			var rear := origin+u*site.x+v*site.y-normal*.015
-			for k in range(poly.size()):
-				var n := (k+1)%poly.size()
-				var side := (rim[k]-back[k]).cross(back[n]-back[k]).normalized()
-				if side.dot((rim[k]+rim[n])*.5-center)<0: side = -side
-				triangle(s,back[k],back[n],rim[n],[tex[k],tex[n],tex[n]],side,tint)
-				triangle(s,back[k],rim[n],rim[k],[tex[k],tex[n],tex[k]],side,tint)
-				var bevel := ((front[k]-rim[k]).cross(rim[n]-rim[k])).normalized()
-				if bevel.dot(normal)<0: bevel = -bevel
-				triangle(s,rim[k],rim[n],front[n],[tex[k],tex[n],tex[n]],bevel,tint)
-				triangle(s,rim[k],front[n],front[k],[tex[k],tex[n],tex[k]],bevel,tint)
-				var fn := (front[k]-center).cross(front[n]-center).normalized()
-				if fn.dot(normal)<0: fn = -fn
-				triangle(s,center,front[k],front[n],[Vector2(.20,.20)+phase,tex[k],tex[n]],fn,tint)
-				triangle(s,rear,back[n],back[k],[Vector2(.20,.20)+phase,tex[n],tex[k]],-normal,tint)
-			stones += 1
+	var y := 0.0
+	var row := 0
+	while y<size.y-.004:
+		var h := minf(rng.randf_range(.18,.29) if not paving else rng.randf_range(.32,.58),size.y-y)
+		var x := 0.0
+		while x<size.x-.004:
+			var w := minf(rng.randf_range(.28,.63) if not paving else rng.randf_range(.38,.77),size.x-x)
+			if x==0 and row%2: w *= .58
+			var center := origin+u*(x+w*.5)+v*(y+h*.5)
+			var allowed := true
+			if paving and style=="path" and not yard_path(center): allowed = false
+			if triangular and y+h>size.y*(1-absf((x+w*.5)/size.x*2-1))-w*size.y/size.x: allowed = false
+			if covered and plaster_field(center,interior,min_y)<-.32: allowed = false
+			if allowed and w>.018 and h>.018:
+				var thickness := rng.randf_range(.07,.13) if not paving else .025
+				var transform := Transform3D(Basis(u*w*.985,v*h*.97,normal*thickness),center+normal*(.020 if not paving else -.004))
+				Kit.emit(surface,"paving" if paving else "rubble",rng.randi(),transform,Color.WHITE*(.75 if not paving and center.y<.55 else 1.0),Vector2.ZERO,Vector2(.42,.42))
+				stones += 1
+			x += w
+		y += h
+		row += 1
 	if stones==0: return {"mesh":ArrayMesh.new(),"stones":0}
-	s.index()
-	s.generate_tangents()
-	return {"mesh":s.commit(),"stones":stones}
+	surface.index()
+	surface.generate_tangents()
+	return {"mesh":surface.commit(),"stones":stones}
+
+static func plaster_field(p: Vector3, interior: bool, min_y: float) -> float:
+	var field := sin(p.x*.51+p.z*.31)+.55*sin(p.x*1.31-p.z*.67+p.y*.47)+.35*cos(p.y*1.15+p.x*.74)+.09*sin(p.x*11+p.y*13+p.z*9)
+	return maxf(maxf(field-(1.55 if interior else .95),(.38-p.y)*4),(min_y-p.y)*4)
+static func plaster_depth(p: Vector3) -> float:
+	return .035+.007*sin(p.x*4.7+p.y*3.5+p.z*4.1)+.003*sin(p.x*17+p.y*19+p.z*11)
 
 # Routes follow gate, room entrances and the covered gallery; unused edges remain earth.
 static func yard_path(p: Vector3) -> bool:
@@ -101,12 +72,13 @@ static func yard_path(p: Vector3) -> bool:
 	var edge := absf(p.x)>16.7 or p.z>16.5
 	return main or east or north or entry or stair or edge
 
-# One spatial damage field across adjacent wall pieces avoids rectangular plaster stickers.
+# Volumetric lime shell with a backing, trowelled front and visible damage-edge returns.
 static func plaster(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size: Vector2, interior := false, min_y := -100.0) -> ArrayMesh:
+	var Kit = preload("res://scripts/blender_kit.gd")
 	var s := SurfaceTool.new()
 	s.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var nx := maxi(1,int(ceil(size.x/.23)))
-	var ny := maxi(1,int(ceil(size.y/.23)))
+	var nx := maxi(1,int(ceil(size.x/.28)))
+	var ny := maxi(1,int(ceil(size.y/.28)))
 	for y in range(ny):
 		for x in range(nx):
 			var a := Vector2(float(x)/nx*size.x,float(y)/ny*size.y)
@@ -114,16 +86,34 @@ static func plaster(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, si
 			var corners: Array = [Vector2(a.x,a.y),Vector2(b.x,a.y),Vector2(b.x,b.y),Vector2(a.x,b.y)]
 			var poly: Array = []
 			var values: Array = []
-			for point in corners:
-				var p: Vector3 = origin+u*point.x+v*point.y
-				var field := sin(p.x*.51+p.z*.31)+.55*sin(p.x*1.31-p.z*.67+p.y*.47)+.35*cos(p.y*1.15+p.x*.74)+.12*sin(p.x*11+p.y*13+p.z*9)
-				values.append(maxf(maxf(field-(1.75 if interior else .95),(.55-p.y)*4),(min_y-p.y)*4))
+			for point in corners: values.append(plaster_field(origin+u*point.x+v*point.y,interior,min_y))
 			for k in range(4):
-				var next := (k+1)%4
+				var j := (k+1)%4
 				if values[k]<=0: poly.append(corners[k])
-				if (values[k]<=0)!=(values[next]<=0): poly.append(corners[k].lerp(corners[next],values[k]/(values[k]-values[next])))
+				if (values[k]<=0)!=(values[j]<=0): poly.append(corners[k].lerp(corners[j],values[k]/(values[k]-values[j])))
 			if poly.size()<3: continue
+			if poly.size()!=4 and (x+y)%3==0:
+				Kit.emit(s,"plaster",x+y,Transform3D(Basis(u*.09,v*.07,normal*.026),origin+u*(a.x+b.x)*.5+v*(a.y+b.y)*.5+normal*.016))
+			var front: Array = []
+			var back: Array = []
+			for point in poly:
+				var p: Vector3 = origin+u*point.x+v*point.y
+				front.append(p+normal*plaster_depth(p))
+				back.append(p-normal*.025)
+			var pos: Vector3 = origin+u*(a.x+b.x)*.5+v*(a.y+b.y)*.5
+			var shade := .96+.03*sin(pos.x*.4+pos.z*.7)+.02*sin(pos.y*2+pos.x)
+			var tint := Color(shade,shade*.995,shade*.98)
 			for k in range(1,poly.size()-1):
-				triangle(s,origin+u*poly[0].x+v*poly[0].y,origin+u*poly[k].x+v*poly[k].y,origin+u*poly[k+1].x+v*poly[k+1].y,[poly[0],poly[k],poly[k+1]],normal,Color.WHITE)
+				var n: Vector3 = (front[k]-front[0]).cross(front[k+1]-front[0]).normalized()
+				if n.dot(normal)<0: n = -n
+				triangle(s,front[0],front[k],front[k+1],[poly[0],poly[k],poly[k+1]],n,tint)
+				triangle(s,back[0],back[k+1],back[k],[poly[0],poly[k+1],poly[k]],-normal,tint)
+			for k in range(poly.size()):
+				var j := (k+1)%poly.size()
+				var mid: Vector2 = (poly[k]+poly[j])*.5
+				if absf(plaster_field(origin+u*mid.x+v*mid.y,interior,min_y))<.07 or mid.x<.001 or mid.y<.001 or mid.x>size.x-.001 or mid.y>size.y-.001:
+					var n: Vector3 = (front[j]-front[k]).cross(normal).normalized()
+					triangle(s,back[k],back[j],front[j],[poly[k],poly[j],poly[j]],n,tint*.88)
+					triangle(s,back[k],front[j],front[k],[poly[k],poly[j],poly[k]],n,tint*.88)
 	s.index()
 	return s.commit()

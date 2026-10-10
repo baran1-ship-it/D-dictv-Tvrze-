@@ -1,35 +1,46 @@
 extends Node3D
 
-var partner: Node3D
+@export var partner: Node3D
 var pivot: Node3D
 var body: StaticBody3D
 var collider: CollisionShape3D
 var handle: Node3D
 var opened := false
 var busy := false
-var title := "Dveře"
-var width := 1.10
-var height := 2.10
-var opening_side := 0.0
+@export var title := "Dveře"
+@export var width := 1.10
+@export var height := 2.10
+@export var opening_side := 0.0
+
+func _ready() -> void:
+	if has_node("Pivot"):
+		pivot = get_node("Pivot")
+		body = pivot.get_node("DoorBody")
+		collider = body.get_node("DoorCollider")
+		handle = body.get_node("Handle")
+		body.set_meta("door",self)
 
 func configure(wood: Material, iron: Material, door_title: String) -> void:
 	title = door_title
 	pivot = Node3D.new()
+	pivot.name = "Pivot"
 	pivot.position.x = -width / 2
 	add_child(pivot)
 	body = StaticBody3D.new()
+	body.name = "DoorBody"
 	body.set_meta("door", self)
 	pivot.add_child(body)
 	var shape := BoxShape3D.new()
 	shape.size = Vector3(width,height,.13)
 	collider = CollisionShape3D.new()
+	collider.name = "DoorCollider"
 	collider.shape = shape
 	collider.position = Vector3(width/2,height/2,0)
 	body.add_child(collider)
 	var wood_batch := SurfaceTool.new()
 	wood_batch.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for i in range(9):
-		var board := preload("res://scripts/construction_mesh.gd").block(Vector3(width/9-.004,height,.13),.008,true,Vector2(i*.117+absf(position.x)*.04,i*.13))
+		var board := preload("res://scripts/construction_mesh.gd").block(Vector3(width/9-.004,height,.13),.008,true,Vector2(i*.117+absf(position.x)*.04,i*.13),0.0,i+int(absf(position.x+position.z)))
 		wood_batch.append_from(board,0,Transform3D(Basis.IDENTITY,Vector3((i+.5)*width/9,height/2,0)))
 	var panel := MeshInstance3D.new()
 	panel.mesh = wood_batch.commit()
@@ -53,6 +64,7 @@ func configure(wood: Material, iron: Material, door_title: String) -> void:
 			rivet.position = Vector3(x, y, 0.095)
 			body.add_child(rivet)
 	handle = Node3D.new()
+	handle.name = "Handle"
 	handle.position = Vector3(width-minf(.28,width*.19),1.05,0)
 	body.add_child(handle)
 	for side in [-1, 1]:
