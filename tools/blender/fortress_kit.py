@@ -31,11 +31,10 @@ def obj(name,g,vs,fs):
 
 def stone(name,g,n,wear):
  ring=[]
- for i in range(n):
-  a=math.tau*i/n+random.uniform(-.1,.1)
-  x=math.copysign(abs(math.cos(a))**.45,math.cos(a))*.5
-  y=math.copysign(abs(math.sin(a))**.55,math.sin(a))*.5
-  ring.append((x*(1-random.uniform(0,wear)),y*(1-random.uniform(0,wear))))
+ outline=[(-.5,-.45),(-.43,-.5),(.45,-.5),(.5,-.43),(.5,.44),(.43,.5),(-.44,.5),(-.5,.43)] if n==8 else [(-.5,-.46),(.4,-.5),(.5,-.34),(.5,.46),(-.42,.5),(-.5,.32)]
+ for i,(x,y) in enumerate(outline):
+  chip=random.uniform(0,.025)+(wear*.35 if i==random.randrange(n) else 0)
+  ring.append((x*(1-chip),y*(1-chip)))
  v=[(x*.93,y*.93,-.5) for x,y in ring]+[(x,y,.44+random.uniform(-.055,.04)) for x,y in ring]
  v += [(random.uniform(-.09,.09),random.uniform(-.06,.06),.49),(0,0,-.5)]
  f=[]

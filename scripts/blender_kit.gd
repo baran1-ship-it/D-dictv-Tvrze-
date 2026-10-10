@@ -45,6 +45,7 @@ static func block(group: String, variant: int, size: Vector3, grain := false, ph
 	var s := SurfaceTool.new()
 	s.begin(Mesh.PRIMITIVE_TRIANGLES)
 	emit(s,group,variant,Transform3D(Basis.from_scale(size),Vector3.ZERO),Color.WHITE,phase,Vector2(.25,size.y*.7) if grain else Vector2.ONE)
+	s.generate_normals()
 	s.index()
 	s.generate_tangents()
 	return s.commit()

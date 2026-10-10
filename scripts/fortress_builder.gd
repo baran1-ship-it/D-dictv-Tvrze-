@@ -127,6 +127,7 @@ func build() -> void:
 	building_corners()
 	details()
 	for key in batches:
+		batches[key].index()
 		var mesh := batches[key].commit() as ArrayMesh
 		mesh.surface_set_material(0,mats[key])
 		var instance := MeshInstance3D.new()
@@ -234,7 +235,7 @@ func make_materials() -> void:
 	mats.rubble_edge.uv1_triplanar = true
 	mats.rubble_edge.uv1_world_triplanar = true
 	mats.rubble_edge.uv1_scale = Vector3.ONE*.5
-	mats.mortar = plain(Color("968b73"))
+	mats.mortar = plain(Color("787263"))
 	mats.vault_stone = mats.rock3d.duplicate()
 	mats.vault_stone.vertex_color_use_as_albedo = true
 	mats.vault_stone.albedo_color = Color("b8b3a6")

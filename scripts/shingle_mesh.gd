@@ -53,6 +53,7 @@ static func make(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size:
 					Masonry.triangle(s,back[i],face[n],face[i],[uv[i],uv[n],uv[i]],side,tint)
 				count += 1
 			x += width
+	s.generate_normals()
 	s.index()
 	s.generate_tangents()
 	return {"mesh":s.commit(),"count":count}

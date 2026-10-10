@@ -44,14 +44,19 @@ static func face(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, size:
 			if triangular and y+h>size.y*(1-absf((x+w*.5)/size.x*2-1))-w*size.y/size.x: allowed = false
 			if covered and plaster_field(center,interior,min_y)<-.32: allowed = false
 			if allowed and w>.018 and h>.018:
-				var thickness := rng.randf_range(.07,.13) if not paving else .025
-				var transform := Transform3D(Basis(u*w*.985,v*h*.97,normal*thickness),center+normal*(.020 if not paving else -.004))
+				var thickness := rng.randf_range(.035,.065) if not paving else .025
+				var basis := Basis(u*w*.985,v*h*.97,normal*thickness)
+				if paving:
+					basis = Basis(normal,rng.randf_range(-.10,.10))*basis
+					center += u*rng.randf_range(-.008,.008)+v*rng.randf_range(-.008,.008)
+				var transform := Transform3D(basis,center+normal*(.008 if not paving else -.004))
 				Kit.emit(surface,"paving" if paving else "rubble",rng.randi(),transform,Color.WHITE*(.75 if not paving and center.y<.55 else 1.0),Vector2.ZERO,Vector2(.42,.42))
 				stones += 1
 			x += w
 		y += h
 		row += 1
 	if stones==0: return {"mesh":ArrayMesh.new(),"stones":0}
+	surface.generate_normals()
 	surface.index()
 	surface.generate_tangents()
 	return {"mesh":surface.commit(),"stones":stones}
@@ -106,7 +111,7 @@ static func plaster(origin: Vector3, u: Vector3, v: Vector3, normal: Vector3, si
 			for k in range(1,poly.size()-1):
 				var n: Vector3 = (front[k]-front[0]).cross(front[k+1]-front[0]).normalized()
 				if n.dot(normal)<0: n = -n
-				triangle(s,front[0],front[k],front[k+1],[poly[0],poly[k],poly[k+1]],n,tint)
+				triangle(s,front[0],front[k],front[k+1],[poly[0],poly[k],poly[k+1]],normal,tint)
 				triangle(s,back[0],back[k+1],back[k],[poly[0],poly[k+1],poly[k]],-normal,tint)
 			for k in range(poly.size()):
 				var j := (k+1)%poly.size()
