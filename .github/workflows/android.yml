@@ -93,6 +93,16 @@ jobs:
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/dedictvi-tvrze.apk
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/dedictvi-tvrze.apk
+          python3 - <<'PYAPK'
+          import zipfile
+          with zipfile.ZipFile('build/dedictvi-tvrze.apk') as apk:
+              names = apk.namelist()
+              for suffix in ['assets/kit/assembled.scn', 'assets/kit/source-fingerprint.txt', 'assets/kit/fortress-kit.json']:
+                  assert any(name.endswith(suffix) for name in names), suffix
+              fingerprint = next(name for name in names if name.endswith('assets/kit/source-fingerprint.txt'))
+              assert len(apk.read(fingerprint).decode().strip()) == 64
+          print('PASS: APK contains baked scene, native kit and source fingerprint')
+          PYAPK
           sha256sum build/dedictvi-tvrze.apk > build/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
